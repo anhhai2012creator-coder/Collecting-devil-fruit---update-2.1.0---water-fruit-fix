@@ -875,6 +875,1840 @@
       LUCKYFRUIT: { superLuckyCards: 3, randomCards: 10, message: 'Quà may mắn' },
       BOSSHUNT: { gold: 100000, diamonds: 100, travelerPoints: 1500, message: 'Quà săn boss' },
       DRAGON: { fruitId: 'dragon', message: 'Nhận trái Rồng' },
+      THIENTHAN: { angelWings: 500, message: '500 cánh thiên thần' },
+      NEWTHIENTHAN: { angelWings: 1000, message: '1000 cánh thiên thần' },
+      TANBINH111: { expBuffMultiplier: 2, expBuffDurationMs: 60 * 60 * 1000, message: 'EXP x2 trong 1 giờ' },
+      LUKHACHTHOIKHONG: { travelerPoints: 5000, message: '5000 điểm Lữ Khách' },
+      LUKHACHXUYENKHONG: { travelerPoints: 2000, message: '2000 điểm Lữ Khách' },
+      ERRORSORRY: { diamonds: 1000, message: '1000 kim cương' },
+      NEWFRUITTT: { angelWings: 2000, diamonds: 2000, message: '2000 cánh thiên thần và 2000 kim cương' },
+      SIXSEVEN: { angelWings: 670, travelerPoints: 670, gold: 670, message: '670 cánh thiên thần, 670 điểm Lữ Khách và 670 vàng' },
+    };
+
+    function redeemGiftcode() {
+      const input = document.getElementById('giftcodeInput');
+      const raw = (input.value || '').trim().toUpperCase();
+      if (!raw) return addLog('❌ Hãy nhập giftcode trước.');
+      if ((state.usedGiftcodes || []).includes(raw)) return addLog('❌ Giftcode này đã được dùng rồi.');
+      const reward = giftcodeRewards[raw];
+      if (!reward) return addLog('❌ Giftcode không tồn tại hoặc đã hết hạn.');
+      if (reward.gold) {
+        state.gold += reward.gold;
+        recordGoldEarned(reward.gold);
+      }
+      if (reward.diamonds) {
+        state.diamonds += reward.diamonds;
+        recordDiamondsEarned(reward.diamonds);
+      }
+      if (reward.randomCards) state.randomCards += reward.randomCards;
+      if (reward.superLuckyCards) state.superLuckyCards += reward.superLuckyCards;
+      if (reward.awakeningTickets) state.awakeningTickets += reward.awakeningTickets;
+      if (reward.travelerPoints) state.travelerPoints += reward.travelerPoints;
+      if (reward.angelWings) state.angelWings = (state.angelWings || 0) + reward.angelWings;
+      if (reward.expBuffMultiplier && reward.expBuffDurationMs) {
+        applyTimedExpBuff(reward.expBuffMultiplier, reward.expBuffDurationMs, `Giftcode ${raw}`);
+      }
+      if (reward.fruitId) {
+        state.inventory.push(makeSpecialFruit(reward.fruitId));
+      }
+      if (reward.fruitId) state.inventory.push(makeSpecialFruit(reward.fruitId));
+      state.usedGiftcodes = state.usedGiftcodes || [];
+      state.usedGiftcodes.push(raw);
+      input.value = '';
+      saveState();
+      addLog(`🎁 Nhập giftcode ${raw} thành công: ${reward.message}.`);
+    }
+
+    function createInitialSave(now = Date.now()) {
+      return {
+        gold: 1200,
+        diamonds: 850,
+        level: 1,
+        xp: 0,
+        selectedChapter: 1,
+        highestUnlockedChapter: 1,
+        currentFruit: null,
+        inventory: [],
+        superLuckyCards: 0,
+        randomCards: 0,
+        luckBonus: 0,
+        awakeningTickets: 0,
+        travelerPoints: 0,
+        travelerTickets: 0,
+        angelWings: 0,
+        gachaResult: null,
+        travelerSpinResult: null,
+        logs: ['Sự kiện Lữ Khách Tham Gia đã bắt đầu!'],
+        shopStock: randomShopInventory(),
+        shopRefreshAt: alignFutureTime(SHOP_RESET_INTERVAL_MS, now),
+        travelerDiscountAt: alignFutureTime(TRAVELER_DISCOUNT_INTERVAL_MS, now),
+        dailyClaimed: [],
+        weeklyClaimed: [],
+        dailyMissionStats: { goldEarned: 0, goldSpent: 0, diamondsEarned: 0 },
+        weeklyMissionStats: { goldEarned: 0, goldSpent: 0, diamondsEarned: 0, gachaRare: 0, gachaSuperRare: 0, gachaLegendary: 0, marketPurchases: 0 },
+        baselineLevelDaily: 1,
+        baselineLevelWeekly: 1,
+        dailyResetAt: alignFutureTime(DAILY_RESET_INTERVAL_MS, now),
+        weeklyResetAt: alignFutureTime(WEEKLY_RESET_INTERVAL_MS, now),
+        expBoostMultiplier: 1,
+        expBoostEndsAt: 0,
+        gamepassRandomBundleVisible: chance(0.3),
+        nextMonsterFightAt: 0,
+        chapterMissionClaimedAt: 0,
+        chapterMissionMap: {},
+        exploreSubtab: 'grind',
+        bossRespawnAt: 0,
+        currentBoss: null,
+        bossFightEndsAt: 0,
+        gachaUsesLeft: GACHA_USES_PER_WINDOW,
+        gachaResetAt: alignFutureTime(GACHA_WINDOW_MS, now),
+        usedGiftcodes: [],
+      };
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return createInitialSave();
+        const parsed = JSON.parse(raw);
+        const base = createInitialSave();
+        return {
+          ...base,
+          ...parsed,
+          dailyMissionStats: { ...base.dailyMissionStats, ...(parsed.dailyMissionStats || parsed.missionStats || {}) },
+          weeklyMissionStats: { ...base.weeklyMissionStats, ...(parsed.weeklyMissionStats || {}) },
+          baselineLevelDaily: parsed.baselineLevelDaily ?? parsed.baselineLevel ?? 1,
+          baselineLevelWeekly: parsed.baselineLevelWeekly ?? parsed.baselineLevel ?? 1,
+          chapterMissionMap: parsed.chapterMissionMap || {},
+        };
+      } catch {
+        return createInitialSave();
+      }
+    }
+
+    let state = loadState();
+
+    function saveState() {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+    }
+
+    function runSelfTests() {
+      console.assert(exploreChapters.length === 10, 'explore chapters should have 10 stages');
+      console.assert(getHighestChapterForLevel(58) === 2, 'level 58 should unlock chapter 2');
+      console.assert(getHighestChapterForLevel(91) === 2, 'level 91 should unlock chapter 2');
+      console.assert(getHighestChapterForLevel(1) === 1, 'level 1 should unlock chapter 1');
+      console.assert(getHighestChapterForLevel(1000) === 10, 'level 1000 should unlock chapter 10');
+      console.assert(fruitDropWeights['Đẳng cấp'].dragon === 0.1, 'dragon rate should be 0.1');
+      console.assert(!('water' in fruitDropWeights['Hiếm']), 'water should not be in normal gacha pool');
+      console.assert(BOSS_RESPAWN_MS === 20 * 60 * 1000, 'boss respawn should be 20 minutes');
+      console.assert(BOSS_FIGHT_DURATION_MS === 5 * 60 * 1000, 'boss fight should be 5 minutes');
+      console.assert(GACHA_USES_PER_WINDOW === 10, 'gacha window should allow 10 uses');
+      const totalRate = Object.values(getRates(15, true)).reduce((sum, value) => sum + value, 0);
+      console.assert(Math.abs(totalRate - 100) < 0.001, 'gacha rates should normalize to 100%');
+      console.assert(angelExchangeRewards.length === 4, 'angel exchange should have 4 rewards');
+      console.assert(PRICE_MULTIPLIER === 1.96, 'shop price multiplier should be 1.96');
+      console.assert(giftcodeRewards.DRAGON && giftcodeRewards.DRAGON.fruitId === 'dragon', 'DRAGON giftcode should give dragon fruit');
+      console.assert(giftcodeRewards.THIENTHAN && giftcodeRewards.THIENTHAN.angelWings === 500, 'THIENTHAN should give 500 angel wings');
+      console.assert(giftcodeRewards.TANBINH111 && giftcodeRewards.TANBINH111.expBuffMultiplier === 2, 'TANBINH111 should give x2 EXP');
+    }
+
+    runSelfTests();
+
+    function addLog(text) {
+      state.logs = [text, ...state.logs].slice(0, 16);
+      saveState();
+      render();
+    }
+
+    function recordGoldEarned(amount) {
+      state.dailyMissionStats.goldEarned += amount;
+      state.weeklyMissionStats.goldEarned += amount;
+    }
+
+    function recordGoldSpent(amount) {
+      state.dailyMissionStats.goldSpent += amount;
+      state.weeklyMissionStats.goldSpent += amount;
+    }
+
+    function recordDiamondsEarned(amount) {
+      state.dailyMissionStats.diamondsEarned += amount;
+      state.weeklyMissionStats.diamondsEarned += amount;
+    }
+
+    function recordGachaTier(tier) {
+      if (tier === 'Hiếm') state.weeklyMissionStats.gachaRare += 1;
+      if (tier === 'Siêu hiếm') state.weeklyMissionStats.gachaSuperRare += 1;
+      if (tier === 'Huyền thoại') state.weeklyMissionStats.gachaLegendary += 1;
+    }
+
+    function recordMarketPurchase() {
+      state.weeklyMissionStats.marketPurchases += 1;
+    }
+
+    function applyXp(amount) {
+      const boosted = Math.floor(amount * state.expBoostMultiplier);
+      let xp = state.xp + boosted;
+      let level = state.level;
+      while (level < MAX_LEVEL && xp >= xpNeeded(level)) {
+        xp -= xpNeeded(level);
+        level += 1;
+        state.logs = [`🎉 Lên cấp ${level}!`, ...state.logs].slice(0, 16);
+      }
+      if (level >= MAX_LEVEL) {
+        level = MAX_LEVEL;
+        xp = 0;
+      }
+      state.level = level;
+      state.xp = xp;
+      if (state.expBoostMultiplier > 1) {
+        state.logs = [`⚡ Buff EXP x${state.expBoostMultiplier} đã tăng EXP từ ${amount} lên ${boosted}.`, ...state.logs].slice(0, 16);
+      }
+      saveState();
+    }
+
+    function getGachaCost() {
+      if (state.level < 40) return null;
+      return Math.floor(1500 * Math.pow(1.012, Math.max(0, state.level - 40)) + Math.max(0, state.level - 40) * 120);
+    }
+
+    function gachaResetText() {
+      const left = Math.max(0, state.gachaResetAt - Date.now());
+      return `${Math.floor(left / 60000)}:${String(Math.floor((left % 60000) / 1000)).padStart(2, '0')}`;
+    }
+
+    function getCurrentChapterMission(chapterId) {
+      return state.chapterMissionMap[String(chapterId)] || null;
+    }
+
+    function canFightMonster() {
+      return Math.max(0, state.nextMonsterFightAt - Date.now()) <= 0;
+    }
+
+    function fightCooldownText() {
+      const left = Math.max(0, state.nextMonsterFightAt - Date.now());
+      return `${Math.floor(left / 60000)}:${String(Math.floor((left % 60000) / 1000)).padStart(2, '0')}`;
+    }
+
+    function chapterMissionCooldownText() {
+      const left = Math.max(0, state.chapterMissionClaimedAt + CHAPTER_MISSION_COOLDOWN_MS - Date.now());
+      return `${Math.floor(left / 60000)}:${String(Math.floor((left % 60000) / 1000)).padStart(2, '0')}`;
+    }
+
+    function timerText(target) {
+      const left = Math.max(0, target - Date.now());
+      return `${String(Math.floor(left / 60000)).padStart(2, '0')}:${String(Math.floor((left % 60000) / 1000)).padStart(2, '0')}`;
+    }
+
+    function rollBoss() {
+      const chapter = exploreChapters.find(ch => ch.id === state.selectedChapter) || exploreChapters[0];
+      const minPower = Math.max(500, chapter.goldMin * 6 + chapter.id * 1200);
+      const maxPower = Math.max(minPower + 1000, chapter.goldMax * 20 + chapter.id * 5000);
+      return { name: `Boss ${chapter.name}`, chapterId: chapter.id, power: randInt(minPower, maxPower) };
+    }
+
+    function getCurrentPower() {
+      if (!state.currentFruit) return 10;
+      return Math.floor(state.currentFruit.power * (state.currentFruit.awakened ? 1.8 : 1));
+    }
+
+    function updateTimers() {
+      const now = Date.now();
+      const maxByLevel = getEffectiveUnlockedChapter();
+      state.highestUnlockedChapter = maxByLevel;
+      if (state.selectedChapter > maxByLevel) state.selectedChapter = maxByLevel;
+      if (state.selectedChapter < 1) state.selectedChapter = 1;
+
+      if (!state.currentBoss && state.bossRespawnAt === 0 && state.bossFightEndsAt === 0) {
+        state.currentBoss = rollBoss();
+      }
+
+      if (now >= state.shopRefreshAt) {
+        state.shopStock = randomShopInventory();
+        state.shopRefreshAt = alignFutureTime(SHOP_RESET_INTERVAL_MS, now);
+        state.gamepassRandomBundleVisible = chance(0.3);
+        state.logs = ['Shop đã làm mới hàng hóa theo giờ thực.', ...state.logs].slice(0, 16);
+      }
+
+      if (now >= state.travelerDiscountAt) {
+        state.shopStock = applyTravelerDiscount(state.shopStock);
+        state.travelerDiscountAt = alignFutureTime(TRAVELER_DISCOUNT_INTERVAL_MS, now);
+        state.logs = ['🎉 Lữ Khách đã giảm giá 3 món trong shop theo mốc 30 phút thực!', ...state.logs].slice(0, 16);
+      }
+
+      if (now >= state.dailyResetAt) {
+        state.dailyClaimed = [];
+        state.dailyMissionStats = { goldEarned: 0, goldSpent: 0, diamondsEarned: 0 };
+        state.baselineLevelDaily = state.level;
+        state.dailyResetAt = alignFutureTime(DAILY_RESET_INTERVAL_MS, now);
+        state.logs = ['📅 Nhiệm vụ ngày đã reset theo giờ thực.', ...state.logs].slice(0, 16);
+      }
+
+      if (now >= state.weeklyResetAt) {
+        state.weeklyClaimed = [];
+        state.weeklyMissionStats = { goldEarned: 0, goldSpent: 0, diamondsEarned: 0, gachaRare: 0, gachaSuperRare: 0, gachaLegendary: 0, marketPurchases: 0 };
+        state.baselineLevelWeekly = state.level;
+        state.weeklyResetAt = alignFutureTime(WEEKLY_RESET_INTERVAL_MS, now);
+        state.logs = ['🗓️ Nhiệm vụ tuần đã reset theo giờ thực.', ...state.logs].slice(0, 16);
+      }
+
+      if (state.expBoostEndsAt > 0 && now >= state.expBoostEndsAt) {
+        state.expBoostMultiplier = 1;
+        state.expBoostEndsAt = 0;
+        state.logs = ['⏳ Buff EXP đã hết hiệu lực.', ...state.logs].slice(0, 16);
+      }
+
+      if (now >= state.gachaResetAt) {
+        state.gachaUsesLeft = GACHA_USES_PER_WINDOW;
+        state.gachaResetAt = alignFutureTime(GACHA_WINDOW_MS, now);
+        state.logs = ['🎰 Lượt gacha đã được làm mới: 10 lượt / 30 phút.', ...state.logs].slice(0, 16);
+      }
+
+      if (state.bossFightEndsAt > 0 && now >= state.bossFightEndsAt) {
+        const boss = state.currentBoss;
+        const effectivePower = getCurrentPower() * (0.9 + state.level * 0.01);
+        if (boss && effectivePower >= boss.power) {
+          state.level = Math.min(MAX_LEVEL, state.level + 50);
+          state.xp = 0;
+          state.logs = [`👑 Hạ gục ${boss.name}, nhận +50 level!`, ...state.logs].slice(0, 16);
+        } else if (boss) {
+          state.logs = [`💥 Thua ${boss.name}. Bạn không mất gì.`, ...state.logs].slice(0, 16);
+        }
+        state.bossFightEndsAt = 0;
+        state.bossRespawnAt = now + BOSS_RESPAWN_MS;
+        state.currentBoss = null;
+      }
+
+      if (state.bossRespawnAt > 0 && now >= state.bossRespawnAt) {
+        state.bossRespawnAt = 0;
+        state.currentBoss = rollBoss();
+        state.logs = [`👹 Boss mới đã hồi sinh: ${state.currentBoss.name}.`, ...state.logs].slice(0, 16);
+      }
+
+      saveState();
+    }
+
+    function doExplore() {
+      const chapter = exploreChapters.find(ch => ch.id === state.selectedChapter);
+      if (state.exploreSubtab !== 'grind') return addLog('🔁 Hãy chuyển sang nhánh Thám hiểm và đánh quái để cày thường.');
+      if (state.selectedChapter > getEffectiveUnlockedChapter()) return addLog('🔒 Bạn chưa mở khóa chương này.');
+      if (window.__exploring) return;
+
+      const durationSec = randInt(chapter.minSec, chapter.maxSec);
+      const simulatedMs = Math.max(2400, Math.min(12000, durationSec * 55));
+      window.__exploring = true;
+      document.getElementById('exploreProgressWrap').classList.remove('hidden');
+      const started = Date.now();
+      const timer = setInterval(() => {
+        const progress = Math.min(100, ((Date.now() - started) / simulatedMs) * 100);
+        document.getElementById('exploreProgressBar').style.width = `${progress}%`;
+      }, 80);
+
+      setTimeout(() => {
+        clearInterval(timer);
+        document.getElementById('exploreProgressBar').style.width = '100%';
+        window.__exploring = false;
+        const mission = getCurrentChapterMission(chapter.id);
+        const expMultiplier = mission ? mission.expMultiplier : 1;
+        const bonusGold = mission ? mission.goldBonus : 0;
+        const goldGain = randInt(chapter.goldMin, chapter.goldMax) + bonusGold;
+        state.gold += goldGain;
+        recordGoldEarned(goldGain);
+        applyXp(Math.floor((chapter.exp + randInt(chapter.exp, chapter.exp * 3)) * expMultiplier));
+        state.logs = [`🧭 ${chapter.name}: nhận ${fmt(goldGain)} vàng${mission ? ` • nhiệm vụ ${mission.label} x${mission.expMultiplier} EXP` : ''}.`, ...state.logs].slice(0, 16);
+        maybeGrantAngelWings('Thám hiểm');
+
+        if (chance(0.05)) {
+          state.superLuckyCards += 1;
+          state.logs = ['🍀 Nhận được Thẻ siêu may mắn!', ...state.logs].slice(0, 16);
+        }
+        if (chance(0.1)) {
+          state.randomCards += 1;
+          state.logs = ['🎴 Nhận được thẻ random!', ...state.logs].slice(0, 16);
+        }
+        if (chance(chapter.diamondChance)) {
+          state.diamonds += chapter.diamondReward;
+          recordDiamondsEarned(chapter.diamondReward);
+          state.logs = [`💎 Tìm thấy ${chapter.diamondReward} kim cương.`, ...state.logs].slice(0, 16);
+        }
+        if (chance(0.18)) {
+          const points = randInt(60, 180);
+          state.travelerPoints += points;
+          state.logs = [`🌍 Gặp Lữ Khách bí ẩn, nhận ${points} điểm Lữ Khách.`, ...state.logs].slice(0, 16);
+        }
+
+        const unlockedByLevel = getHighestChapterForLevel(state.level);
+        if (state.highestUnlockedChapter < unlockedByLevel) {
+          const oldUnlocked = state.highestUnlockedChapter;
+          state.highestUnlockedChapter = unlockedByLevel;
+          for (let id = oldUnlocked + 1; id <= unlockedByLevel; id += 1) {
+            const unlockedChapter = exploreChapters[id - 1];
+            if (unlockedChapter) {
+              state.logs = [`🗺️ Mở khóa ${unlockedChapter.name}.`, ...state.logs].slice(0, 16);
+            }
+          }
+        }
+        saveState();
+        render();
+      }, simulatedMs);
+    }
+
+    function fightMonster() {
+      if (state.exploreSubtab !== 'grind') return addLog('🔁 Hãy chuyển sang nhánh Thám hiểm và đánh quái để dùng tính năng này.');
+      if (!state.currentFruit) return addLog('❌ Bạn phải có trái ác quỷ đang dùng mới có thể đánh quái.');
+      const now = Date.now();
+      if (now < state.nextMonsterFightAt) {
+        const secondsLeft = Math.ceil((state.nextMonsterFightAt - now) / 1000);
+        return addLog(`⏳ Bạn cần chờ ${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')} nữa mới có thể đánh quái tiếp.`);
+      }
+
+      state.nextMonsterFightAt = now + MONSTER_FIGHT_COOLDOWN_MS;
+      const stagePowers = [0, 120, 2200, 7000, 22000, 60000, 85000, 120000, 155000, 190000, 230000];
+      const stagePower = stagePowers[state.selectedChapter] || 230000;
+      const effectivePower = getCurrentPower() * (0.9 + state.level * 0.01);
+      const successRate = Math.max(0.12, Math.min(0.95, effectivePower / (effectivePower + stagePower)));
+
+      if (!chance(successRate)) {
+        const lostGold = Math.min(state.gold, randInt(20, 120) * state.selectedChapter);
+        state.gold = Math.max(0, state.gold - lostGold);
+        saveState();
+        return addLog(`💀 Đánh quái thất bại. Tỉ lệ thắng ${(successRate * 100).toFixed(0)}%. Mất ${fmt(lostGold)} vàng.`);
+      }
+
+      const baseReward = Math.max(30, Math.floor(effectivePower / 8));
+      const goldGain = randInt(baseReward, Math.floor(baseReward * 1.6));
+      const xpGain = randInt(12, 28) + Math.floor(state.level * 0.5);
+      state.gold += goldGain;
+      recordGoldEarned(goldGain);
+      applyXp(xpGain);
+      maybeGrantAngelWings('Đánh quái');
+      saveState();
+      addLog(`⚔️ Đánh quái thành công (${(successRate * 100).toFixed(0)}%), nhận ${fmt(goldGain)} vàng và ${xpGain} EXP.`);
+    }
+
+    function startBossFight() {
+      if (state.exploreSubtab !== 'boss') return addLog('🔁 Hãy chuyển sang nhánh Boss.');
+      if (state.bossFightEndsAt > 0) return addLog('⏳ Bạn đang đánh boss rồi.');
+      if (state.bossRespawnAt > Date.now()) return addLog(`⏳ Boss chưa hồi sinh. Còn ${timerText(state.bossRespawnAt)}.`);
+      if (!state.currentBoss || state.currentBoss.chapterId !== state.selectedChapter) {
+        state.currentBoss = rollBoss();
+      }
+      state.bossFightEndsAt = Date.now() + BOSS_FIGHT_DURATION_MS;
+      saveState();
+      addLog(`⚔️ Bắt đầu đánh ${state.currentBoss.name}. Thời gian chiến đấu: 5 phút.`);
+    }
+
+    function doGacha() {
+      if (state.level < 40) return addLog('🔒 Cần đạt level 40 mới có thể gacha.');
+      if (state.gachaUsesLeft <= 0) return addLog(`⏳ Bạn đã hết 10 lượt gacha. Còn ${gachaResetText()} nữa sẽ làm mới.`);
+      const usingRandomCard = state.randomCards > 0;
+      const cost = getGachaCost();
+      if (!usingRandomCard && state.gold < cost) {
+        return addLog(`❌ Không đủ vàng để gacha (cần ${fmt(cost)} vàng hoặc dùng thẻ random).`);
+      }
+
+      state.gachaUsesLeft -= 1;
+      if (usingRandomCard) {
+        state.randomCards -= 1;
+      } else {
+        state.gold -= cost;
+        recordGoldSpent(cost);
+      }
+
+      const useSuperLucky = state.superLuckyCards > 0;
+      if (useSuperLucky) state.superLuckyCards -= 1;
+      state.gachaResult = { ...pickFruit(state.luckBonus, useSuperLucky), awakened: false };
+      recordGachaTier(state.gachaResult.tier);
+      saveState();
+      addLog(`🎁 Gacha ra ${state.gachaResult.name} - ${state.gachaResult.tier}${usingRandomCard ? ' bằng thẻ random' : ` với giá ${fmt(cost)} vàng`}.`);
+    }
+
+    function buyMarketItem(item) {
+      if (state.diamonds < item.price) return addLog(`❌ Không đủ kim cương để mua ${item.name}.`);
+      state.diamonds -= item.price;
+      recordMarketPurchase();
+      if (item.id.startsWith('luck')) {
+        state.luckBonus += item.effect;
+        saveState();
+        return addLog(`🧪 Dùng ${item.name}, tăng tỉ lệ gacha thêm ${item.effect}%.`);
+      }
+      if (item.id === 'awakening') {
+        state.awakeningTickets += 1;
+        saveState();
+        return addLog('🎟️ Mua thành công 1 Vé awakening.');
+      }
+    }
+
+    function buyGamepass(item) {
+      if (state.level < 500) return addLog('🔒 Cần level 500 mới có thể dùng GAMEPASS.');
+      if (state.diamonds < item.price) return addLog(`❌ Không đủ kim cương để mua ${item.name}.`);
+      state.diamonds -= item.price;
+      applyTimedExpBuff(item.multiplier, item.durationMs, item.name);
+      saveState();
+      addLog(`🚀 Kích hoạt ${item.name}.`);
+    }
+
+    function buyRandomBundle() {
+      if (state.level < 500) return addLog('🔒 Cần level 500 mới có thể dùng GAMEPASS.');
+      if (!state.gamepassRandomBundleVisible) return addLog('❌ Gói 10 vé random hiện không xuất hiện trong shop.');
+      if (state.diamonds < 50) return addLog('❌ Không đủ kim cương để mua 10 vé random.');
+      state.diamonds -= 50;
+      state.randomCards += 10;
+      state.gamepassRandomBundleVisible = false;
+      saveState();
+      addLog('🎴 Mua thành công gói 10 vé random với giá 50 kim cương.');
+    }
+
+    function buyFruitFromShop(fruit) {
+      if (state.gold < fruit.finalPrice) return addLog(`❌ Không đủ vàng mua ${fruit.name}.`);
+      state.gold -= fruit.finalPrice;
+      recordGoldSpent(fruit.finalPrice);
+      state.currentFruit = { ...fruit, awakened: false, source: 'shop' };
+      saveState();
+      addLog(`🛒 Mua và ăn ngay ${fruit.name} với giá ${fmt(fruit.finalPrice)} vàng.`);
+    }
+
+    function handleAwaken() {
+      if (!state.currentFruit) return addLog('❌ Bạn chưa có trái đang dùng.');
+      if (!state.currentFruit.awakenable) return addLog('❌ Trái hiện tại không thể awakening.');
+      if (state.currentFruit.awakened) return addLog('✅ Trái này đã awakening rồi.');
+      if (state.awakeningTickets < 1) return addLog('❌ Bạn không có Vé awakening.');
+      const fruitName = state.currentFruit.name;
+      state.awakeningTickets -= 1;
+      saveState();
+      addLog('⏳ Bắt đầu awakening... (mô phỏng 8 phút bằng 8 giây)');
+      setTimeout(() => {
+        if (chance(0.3)) {
+          state.currentFruit.awakened = true;
+          state.diamonds += 250;
+          state.gold += 50000;
+          recordDiamondsEarned(250);
+          recordGoldEarned(50000);
+          saveState();
+          addLog(`🌟 Awakening thành công cho ${fruitName}! Nhận 250 kim cương và 50.000 vàng.`);
+        } else {
+          saveState();
+          addLog(`💥 Awakening thất bại cho ${fruitName}.`);
+        }
+      }, 8000);
+    }
+
+    function grantReward(reward, sourceLabel) {
+      if (reward.kind === 'diamonds') {
+        state.diamonds += reward.amount;
+        recordDiamondsEarned(reward.amount);
+        state.logs = [`🎁 ${sourceLabel}: nhận ${reward.amount} kim cương.`, ...state.logs].slice(0, 16);
+        return;
+      }
+      if (reward.kind === 'travelerPoints') {
+        state.travelerPoints += reward.amount;
+        state.logs = [`🎁 ${sourceLabel}: nhận ${fmt(reward.amount)} điểm Lữ Khách.`, ...state.logs].slice(0, 16);
+        return;
+      }
+      if (reward.kind === 'randomCards') {
+        state.randomCards += reward.amount;
+        state.logs = [`🎁 ${sourceLabel}: nhận ${reward.amount} thẻ random.`, ...state.logs].slice(0, 16);
+        return;
+      }
+      if (reward.kind === 'awakeningTickets') {
+        state.awakeningTickets += reward.amount;
+        state.logs = [`🎁 ${sourceLabel}: nhận ${reward.amount} vé awakening.`, ...state.logs].slice(0, 16);
+        return;
+      }
+      if (reward.kind === 'travelerTickets') {
+        state.travelerTickets += reward.amount;
+        state.logs = [`🎁 ${sourceLabel}: nhận ${reward.amount} thẻ Lữ Khách.`, ...state.logs].slice(0, 16);
+        return;
+      }
+      if (reward.kind === 'fruit') {
+        const item = makeSpecialFruit(reward.fruitId);
+        state.inventory.push(item);
+        state.logs = [`🎁 ${sourceLabel}: nhận ${getFruitName(item)} vào túi.`, ...state.logs].slice(0, 16);
+      }
+    }
+
+    function exchangeTravelerReward(reward) {
+      if (state.travelerPoints < reward.cost) return addLog(`❌ Không đủ điểm Lữ Khách để đổi ${reward.label}.`);
+      state.travelerPoints -= reward.cost;
+      grantReward(reward, 'Đổi điểm Lữ Khách');
+      saveState();
+      render();
+    }
+
+    function spinTraveler(count) {
+      const ticketCost = count === 6 ? 5 : 1;
+      if (state.travelerTickets < ticketCost) return addLog('❌ Không đủ thẻ Lữ Khách để quay.');
+      state.travelerTickets -= ticketCost;
+      const results = [];
+      for (let i = 0; i < count; i++) {
+        const reward = weightedPick(travelerSpinRewards.map(item => ({ value: item, weight: item.weight })));
+        results.push(reward.label);
+        grantReward(reward, 'Vòng quay Lữ Khách');
+      }
+      state.travelerSpinResult = results.join(' • ');
+      saveState();
+      render();
+    }
+
+    function claimMission(mission, scope) {
+      state.travelerPoints += mission.reward;
+      if (scope === 'daily') state.dailyClaimed.push(mission.id);
+      else state.weeklyClaimed.push(mission.id);
+      addLog(`📜 Hoàn thành nhiệm vụ ${mission.label}, nhận ${fmt(mission.reward)} điểm Lữ Khách.`);
+    }
+
+    function claimChapterMission() {
+      const now = Date.now();
+      if (now < state.chapterMissionClaimedAt + CHAPTER_MISSION_COOLDOWN_MS) {
+        const left = state.chapterMissionClaimedAt + CHAPTER_MISSION_COOLDOWN_MS - now;
+        return addLog(`⏳ Cần chờ ${Math.ceil(left / 1000)} giây nữa mới nhận nhiệm vụ chương mới.`);
+      }
+      const chapterId = state.selectedChapter;
+      const missionPool = chapterMissionTemplates[chapterId] || [];
+      if (!missionPool.length) return addLog('❌ Chương này chưa có nhiệm vụ riêng.');
+      const mission = missionPool[randInt(0, missionPool.length - 1)];
+      state.chapterMissionMap[String(chapterId)] = mission;
+      state.chapterMissionClaimedAt = now;
+      maybeGrantAngelWings('Nhận nhiệm vụ chương');
+      saveState();
+      addLog(`📘 Nhận nhiệm vụ ${mission.label}: x${mission.expMultiplier} EXP, +${fmt(mission.goldBonus)} vàng khi thám hiểm.`);
+    }
+
+    function selectTab(name) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === name));
+      document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.toggle('active', panel.id === `tab-${name}`));
+    }
+
+    function selectExploreSubtab(name) {
+      state.exploreSubtab = name;
+      if (name === 'boss' && (!state.currentBoss || state.currentBoss.chapterId !== state.selectedChapter) && state.bossRespawnAt === 0 && state.bossFightEndsAt === 0) {
+        state.currentBoss = rollBoss();
+      }
+      saveState();
+      render();
+    }
+
+    function renderTop() {
+      document.getElementById('goldText').textContent = fmt(state.gold);
+      document.getElementById('diamondText').textContent = fmt(state.diamonds);
+      document.getElementById('levelText').textContent = fmt(state.level);
+      document.getElementById('travelerPointText').textContent = fmt(state.travelerPoints);
+      document.getElementById('collectionText').textContent = fmt(new Set([
+        ...(state.currentFruit ? [state.currentFruit.id + (state.currentFruit.awakened ? '-a' : '')] : []),
+        ...state.inventory.map(item => item.id + (item.awakened ? '-a' : '')),
+      ]).size);
+      document.getElementById('xpText').textContent = `${fmt(state.xp)}/${fmt(xpNeeded(state.level))}`;
+      document.getElementById('superLuckyText').textContent = fmt(state.superLuckyCards);
+      document.getElementById('randomCardText').textContent = fmt(state.randomCards);
+      document.getElementById('awakeningTicketText').textContent = fmt(state.awakeningTickets);
+      document.getElementById('travelerTicketText').textContent = fmt(state.travelerTickets);
+      document.getElementById('angelWingText').textContent = fmt(state.angelWings || 0);
+      document.getElementById('xpBar').style.width = `${Math.min(100, state.xp / xpNeeded(state.level) * 100)}%`;
+    }
+
+    function renderChapters() {
+      const effectiveUnlocked = getEffectiveUnlockedChapter();
+      const wrap = document.getElementById('chapterList');
+      wrap.innerHTML = '';
+      exploreChapters.forEach(item => {
+        const btn = document.createElement('button');
+        btn.className = `chapter-btn ${state.selectedChapter === item.id ? 'active' : ''} ${item.id > effectiveUnlocked ? 'locked' : ''}`;
+        btn.innerHTML = `<div style="font-weight:700;">${item.name} ${item.id > effectiveUnlocked ? '🔒' : ''}</div><div class="muted" style="margin-top:4px;">Lv ${item.minLevel}-${item.maxLevel}</div><div class="muted">${fmt(item.goldMin)} - ${fmt(item.goldMax)} vàng</div>`;
+        btn.onclick = () => {
+          if (item.id <= effectiveUnlocked) {
+            state.selectedChapter = item.id;
+            state.highestUnlockedChapter = getEffectiveUnlockedChapter();
+            if (state.exploreSubtab === 'boss' && (!state.currentBoss || state.currentBoss.chapterId !== item.id) && state.bossRespawnAt === 0 && state.bossFightEndsAt === 0) {
+              state.currentBoss = rollBoss();
+            }
+            saveState();
+            render();
+          }
+        };
+        wrap.appendChild(btn);
+      });
+
+      const chapter = exploreChapters.find(item => item.id === state.selectedChapter);
+      const mission = getCurrentChapterMission(chapter.id);
+      const liveBoss = state.currentBoss && state.currentBoss.chapterId === chapter.id ? state.currentBoss : null;
+      const previewBoss = state.bossRespawnAt === 0 && state.bossFightEndsAt === 0 ? (liveBoss || rollBoss()) : null;
+      const shownBoss = liveBoss || previewBoss;
+      if (!liveBoss && previewBoss && state.bossRespawnAt === 0 && state.bossFightEndsAt === 0) state.currentBoss = previewBoss;
+      const bossReady = state.bossRespawnAt <= Date.now() && state.bossFightEndsAt === 0;
+      const bossFighting = state.bossFightEndsAt > Date.now();
+
+      document.getElementById('chapterInfo').innerHTML = `
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <button class="action ${state.exploreSubtab === 'grind' ? '' : 'light'}" id="subtabGrindBtn">Thám hiểm và đánh quái</button>
+          <button class="action ${state.exploreSubtab === 'boss' ? '' : 'light'}" id="subtabBossBtn">Boss</button>
+        </div>
+        ${state.exploreSubtab === 'grind' ? `
+          <div>
+            <div class="grid-4">
+              <div><b>Level:</b> ${chapter.minLevel}-${chapter.maxLevel}</div>
+              <div><b>Vàng:</b> ${fmt(chapter.goldMin)}-${fmt(chapter.goldMax)}</div>
+              <div><b>Kim cương:</b> ${(chapter.diamondChance * 100).toFixed(0)}% · ${chapter.diamondReward}</div>
+              <div><b>Lữ Khách:</b> 18% · May mắn 5% · Random 10%</div>
+            </div>
+            <div class="list-item" style="margin-top:12px;background:#f8fafc;">
+              <div class="row">
+                <div>
+                  <div style="font-weight:700;">Nhiệm vụ chương</div>
+                  <div class="muted">${mission ? `${mission.label} • x${mission.expMultiplier} EXP • +${fmt(mission.goldBonus)} vàng` : 'Chưa nhận nhiệm vụ cho chương này.'}</div>
+                </div>
+                <button class="action" id="claimChapterMissionBtn">${Date.now() >= state.chapterMissionClaimedAt + CHAPTER_MISSION_COOLDOWN_MS ? 'Nhận nhiệm vụ' : `Chờ ${chapterMissionCooldownText()}`}</button>
+              </div>
+            </div>
+          </div>` : `
+          <div class="list-item" style="background:#f8fafc;">
+            <div class="row">
+              <div>
+                <div style="font-weight:700;">${shownBoss ? shownBoss.name : `Boss ${chapter.name}`}</div>
+                <div class="muted">Lực chiến boss: <b>${shownBoss ? fmt(shownBoss.power) : '???'}</b></div>
+                <div class="muted">Boss hồi sinh sau 20 phút. Đánh boss tốn 5 phút. Nếu thắng: <b>+50 level</b>. Nếu thua: <b>không mất gì</b>.</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="muted">${bossFighting ? `Đang chiến đấu • còn ${timerText(state.bossFightEndsAt)}` : bossReady ? 'Boss sẵn sàng' : `Hồi sinh sau ${timerText(state.bossRespawnAt)}`}</div>
+                <button class="action" id="startBossBtn" ${bossReady ? '' : 'disabled'} style="margin-top:8px;">Đánh boss</button>
+              </div>
+            </div>
+          </div>`}
+      `;
+
+      document.getElementById('subtabGrindBtn').onclick = () => selectExploreSubtab('grind');
+      document.getElementById('subtabBossBtn').onclick = () => selectExploreSubtab('boss');
+      if (state.exploreSubtab === 'grind') {
+        const missionBtn = document.getElementById('claimChapterMissionBtn');
+        missionBtn.disabled = Date.now() < state.chapterMissionClaimedAt + CHAPTER_MISSION_COOLDOWN_MS;
+        missionBtn.onclick = claimChapterMission;
+      } else {
+        const bossBtn = document.getElementById('startBossBtn');
+        if (bossBtn) bossBtn.onclick = startBossFight;
+      }
+
+      document.getElementById('fightBtn').disabled = !canFightMonster() || state.exploreSubtab !== 'grind';
+      document.getElementById('fightBtn').textContent = state.exploreSubtab !== 'grind'
+        ? 'Chỉ dùng ở chế độ cày thường'
+        : (canFightMonster() ? 'Đánh quái kiếm vàng' : `Chờ ${fightCooldownText()}`);
+      document.getElementById('exploreBtn').disabled = state.exploreSubtab !== 'grind' || window.__exploring;
+      document.getElementById('exploreBtn').textContent = state.exploreSubtab !== 'grind'
+        ? 'Chỉ dùng ở chế độ cày thường'
+        : 'Bắt đầu thám hiểm';
+    }
+
+    function renderGacha() {
+      document.getElementById('gachaCostText').textContent = state.level < 40 ? 'Mở ở lv 40' : `${fmt(getGachaCost())} vàng`;
+      document.getElementById('luckText').textContent = `+${state.luckBonus}%`;
+      document.getElementById('autoLuckyText').textContent = state.superLuckyCards > 0 ? 'Có' : 'Không';
+      document.getElementById('gachaUsesText').textContent = `${state.gachaUsesLeft}/${GACHA_USES_PER_WINDOW}`;
+      document.getElementById('gachaResetNote').textContent = `Làm mới sau: ${gachaResetText()} • Nếu có thẻ random, gacha sẽ ưu tiên dùng thẻ trước.`;
+      const rates = getRates(state.luckBonus, state.superLuckyCards > 0);
+      const rateList = document.getElementById('rateList');
+      rateList.innerHTML = '';
+      tierOrder.forEach(tier => {
+        const div = document.createElement('div');
+        div.className = 'mini';
+        div.innerHTML = `<div class="label">${tier}</div><div class="value">${rates[tier].toFixed(2)}%</div>`;
+        rateList.appendChild(div);
+      });
+
+      const box = document.getElementById('gachaResultBox');
+      if (!state.gachaResult) {
+        box.className = 'hidden';
+        box.innerHTML = '';
+      } else {
+        box.className = 'list-item';
+        box.innerHTML = `
+          <div class="fruit-row">${fruitChipHtml(state.gachaResult, 'large')}<div class="fruit-main"><div class="row"><div style="font-size:24px;font-weight:900;">${state.gachaResult.name}</div><span class="badge">${state.gachaResult.tier}</span></div><div class="muted" style="margin-top:8px;">Lực chiến: ${fmt(state.gachaResult.power)}</div></div></div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;">
+            <button class="action" id="eatBtn">Ăn</button>
+            <button class="action secondary" id="storeBtn">Cất vào túi</button>
+            <button class="action light" id="tossBtn">Vứt</button>
+          </div>`;
+        document.getElementById('eatBtn').onclick = () => {
+          const name = state.gachaResult.name;
+          state.currentFruit = { ...state.gachaResult, source: 'gacha' };
+          state.gachaResult = null;
+          saveState();
+          addLog(`🍽️ Đã ăn ${name}.`);
+        };
+        document.getElementById('storeBtn').onclick = () => {
+          const name = state.gachaResult.name;
+          state.inventory.push({ ...state.gachaResult, uid: `${state.gachaResult.id}-${Date.now()}` });
+          state.gachaResult = null;
+          saveState();
+          addLog(`🎒 Đã cất ${name} vào túi.`);
+        };
+        document.getElementById('tossBtn').onclick = () => {
+          const name = state.gachaResult.name;
+          state.gachaResult = null;
+          saveState();
+          addLog(`🗑️ Đã vứt ${name}.`);
+        };
+      }
+    }
+
+    function renderInventory() {
+      const box = document.getElementById('currentFruitBox');
+      if (!state.currentFruit) {
+        box.innerHTML = '<div class="list-item muted">Bạn chưa ăn trái nào.</div>';
+      } else {
+        box.innerHTML = `
+          <div class="list-item ${state.currentFruit.awakened ? 'highlight' : ''}">
+            <div class="fruit-row">${fruitChipHtml(state.currentFruit, 'large')}<div class="fruit-main"><div class="row"><div style="font-size:24px;font-weight:900;">${getFruitName(state.currentFruit)}</div><span class="badge">${state.currentFruit.tier}</span></div>
+            <div class="muted" style="margin-top:8px;">Lực chiến gốc: ${fmt(state.currentFruit.power)}</div>
+            <div class="muted">Lực chiến hiện tại: ${fmt(getCurrentPower())}</div>
+            <div class="muted">Nguồn: ${state.currentFruit.source}</div>
+            <div style="margin-top:12px;"><button class="action" id="awakenBtn">Awakening</button></div></div></div>
+          </div>`;
+        document.getElementById('awakenBtn').onclick = handleAwaken;
+      }
+
+      const list = document.getElementById('inventoryList');
+      list.innerHTML = '';
+      if (!state.inventory.length) {
+        list.innerHTML = '<div class="list-item muted">Túi đang trống.</div>';
+        return;
+      }
+
+      state.inventory.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.innerHTML = `<div class="fruit-row">${fruitChipHtml(item)}<div class="fruit-main"><div class="row"><div><div style="font-weight:700;">${getFruitName(item)}</div><div class="muted">Lực chiến ${fmt(item.power)}</div></div><span class="badge">${item.tier}</span></div></div></div><div style="margin-top:10px;"><button class="action secondary">Dùng trái này</button></div>`;
+        div.querySelector('button').onclick = () => {
+          state.currentFruit = { ...item, source: 'inventory' };
+          state.inventory = state.inventory.filter(entry => entry.uid !== item.uid);
+          saveState();
+          addLog(`⚡ Đã dùng ${item.name} từ túi.`);
+        };
+        list.appendChild(div);
+      });
+    }
+
+    function renderShop() {
+      document.getElementById('shopResetText').textContent = timerText(state.shopRefreshAt);
+      document.getElementById('discountResetText').textContent = timerText(state.travelerDiscountAt);
+      document.getElementById('expBuffText').textContent = state.expBoostEndsAt > Date.now() ? `x${state.expBoostMultiplier}` : 'Không có';
+      document.getElementById('gamepassOpenText').textContent = state.level >= 500 ? 'Đã mở' : 'Mở ở lv 500';
+
+      const market = document.getElementById('marketList');
+      market.innerHTML = '';
+      marketItems.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'list-item row';
+        div.innerHTML = `<div><div style="font-weight:700;">${item.name}</div><div class="muted">${item.id === 'awakening' ? 'Nâng cấp trái đủ điều kiện' : `+${item.effect}% may mắn`}</div></div><div style="display:flex;gap:8px;align-items:center;"><b>${fmt(item.price)} 💎</b><button class="action">Mua</button></div>`;
+        div.querySelector('button').onclick = () => buyMarketItem(item);
+        market.appendChild(div);
+      });
+
+      const gamepass = document.getElementById('gamepassList');
+      gamepass.innerHTML = `<div class="list-item muted">${state.expBoostEndsAt > Date.now() ? `Buff đang chạy x${state.expBoostMultiplier}, còn ${Math.ceil((state.expBoostEndsAt - Date.now()) / 60000)} phút.` : 'Mở ở level 500. Buff EXP chạy theo thời gian thực.'}</div>`;
+      gamepassItems.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'list-item row';
+        div.innerHTML = `<div><div style="font-weight:700;">${item.name}</div><div class="muted">EXP x${item.multiplier}</div></div><div style="display:flex;gap:8px;align-items:center;"><b>${fmt(item.price)} 💎</b><button class="action">Mua</button></div>`;
+        div.querySelector('button').disabled = state.level < 500;
+        div.querySelector('button').onclick = () => buyGamepass(item);
+        gamepass.appendChild(div);
+      });
+
+      const bundle = document.createElement('div');
+      bundle.className = 'list-item row';
+      bundle.innerHTML = `<div><div style="font-weight:700;">10 vé random</div><div class="muted">30% xuất hiện khi shop reset</div></div><div style="display:flex;gap:8px;align-items:center;"><b>50 💎</b><button class="action">${state.gamepassRandomBundleVisible ? 'Mua' : 'Ẩn'}</button></div>`;
+      const bundleBtn = bundle.querySelector('button');
+      bundleBtn.disabled = state.level < 500 || !state.gamepassRandomBundleVisible;
+      bundleBtn.onclick = buyRandomBundle;
+      gamepass.appendChild(bundle);
+
+      const fruitList = document.getElementById('shopFruitList');
+      fruitList.innerHTML = '';
+      state.shopStock.forEach(fruit => {
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        const priceHtml = fruit.discount > 0
+          ? `<span style="text-decoration:line-through;color:#94a3b8;">${fmt(fruit.shopPrice)}</span> <b style="color:#059669;">${fmt(fruit.finalPrice)}</b> <span style="color:#dc2626;">-${fruit.discount}%</span>`
+          : `<b>${fmt(fruit.finalPrice)} vàng</b>`;
+        div.innerHTML = `<div class="fruit-row">${fruitChipHtml(fruit)}<div class="fruit-main"><div class="row"><div><div style="font-weight:700;">${fruit.name}</div><div class="muted">${fmt(fruit.power)} lực chiến</div></div><span class="badge">${fruit.tier}</span></div></div></div><div class="row" style="margin-top:10px;"><div>${priceHtml}</div><button class="action">Mua</button></div>`;
+        div.querySelector('button').onclick = () => buyFruitFromShop(fruit);
+        fruitList.appendChild(div);
+      });
+    }
+
+    function renderTraveler() {
+      document.getElementById('travelerPointText2').textContent = fmt(state.travelerPoints);
+      document.getElementById('travelerTicketText2').textContent = fmt(state.travelerTickets);
+
+      const dailyProgressBase = {
+        levelGain: Math.max(0, state.level - state.baselineLevelDaily),
+        goldEarned: state.dailyMissionStats.goldEarned,
+        goldSpent: state.dailyMissionStats.goldSpent,
+        diamondsEarned: state.dailyMissionStats.diamondsEarned,
+      };
+      const weeklyProgressBase = {
+        levelGain: Math.max(0, state.level - state.baselineLevelWeekly),
+        goldEarned: state.weeklyMissionStats.goldEarned,
+        goldSpent: state.weeklyMissionStats.goldSpent,
+        diamondsEarned: state.weeklyMissionStats.diamondsEarned,
+        gachaRare: state.weeklyMissionStats.gachaRare,
+        gachaSuperRare: state.weeklyMissionStats.gachaSuperRare,
+        gachaLegendary: state.weeklyMissionStats.gachaLegendary,
+        marketPurchases: state.weeklyMissionStats.marketPurchases,
+      };
+
+      const renderMissionList = (elId, missions, claimed, scope) => {
+        const wrap = document.getElementById(elId);
+        wrap.innerHTML = '';
+        missions.forEach(mission => {
+          const progressBase = scope === 'daily' ? dailyProgressBase : weeklyProgressBase;
+          const progress = progressBase[mission.type] || 0;
+          const done = claimed.includes(mission.id);
+          const percent = Math.min(100, (progress / mission.target) * 100);
+          const div = document.createElement('div');
+          div.className = 'list-item';
+          div.innerHTML = `<div class="row"><div><div style="font-weight:700;">${mission.label}</div><div class="muted">Thưởng: ${fmt(mission.reward)} điểm Lữ Khách</div></div>${done ? '<span class="badge">Đã nhận</span>' : progress >= mission.target ? '<button class="action">Nhận</button>' : `<span class="badge">${fmt(progress)}/${fmt(mission.target)}</span>`}</div><div class="progress" style="margin-top:10px;"><div style="width:${percent}%;"></div></div>`;
+          const btn = div.querySelector('button');
+          if (btn) btn.onclick = () => claimMission(mission, scope);
+          wrap.appendChild(div);
+        });
+      };
+
+      renderMissionList('dailyMissionList', travelerDailyMissions, state.dailyClaimed, 'daily');
+      renderMissionList('weeklyMissionList', travelerWeeklyMissions, state.weeklyClaimed, 'weekly');
+
+      const exchangeWrap = document.getElementById('travelerExchangeList');
+      exchangeWrap.innerHTML = '';
+      travelerExchangeRewards.forEach(reward => {
+        const div = document.createElement('div');
+        div.className = 'list-item row';
+        div.innerHTML = `<div><div style="font-weight:700;">${reward.label}</div><div class="muted">Giá đổi: ${fmt(reward.cost)} điểm</div></div><button class="action">Đổi</button>`;
+        div.querySelector('button').onclick = () => exchangeTravelerReward(reward);
+        exchangeWrap.appendChild(div);
+      });
+
+      const spinRewards = document.getElementById('travelerSpinRewardList');
+      spinRewards.innerHTML = '';
+      travelerSpinRewards.forEach(reward => {
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.innerHTML = `<div style="font-weight:700;">${reward.label}</div><div class="muted">Tỉ lệ: ${reward.weight}% tương đối</div>`;
+        spinRewards.appendChild(div);
+      });
+
+      const result = document.getElementById('spinResultBox');
+      if (state.travelerSpinResult) {
+        result.classList.remove('hidden');
+        result.innerHTML = `<b>Kết quả gần nhất:</b> ${state.travelerSpinResult}`;
+      } else {
+        result.classList.add('hidden');
+      }
+    }
+
+    function renderHeaven() {
+      const angelWingText2 = document.getElementById('angelWingText2');
+      if (angelWingText2) angelWingText2.textContent = fmt(state.angelWings || 0);
+      const angelWrap = document.getElementById('angelExchangeList');
+      angelWrap.innerHTML = '';
+      angelExchangeRewards.forEach(reward => {
+        const div = document.createElement('div');
+        div.className = 'list-item row';
+        div.innerHTML = `<div><div style="font-weight:700;">${reward.label}</div><div class="muted">Giá đổi: ${fmt(reward.cost)} cánh thiên thần</div></div><button class="action">Đổi</button>`;
+        div.querySelector('button').onclick = () => exchangeAngelReward(reward);
+        angelWrap.appendChild(div);
+      });
+    }
+
+    function renderFruitDex() {
+      const wrap = document.getElementById('fruitDexList');
+      wrap.innerHTML = '';
+      fruits.forEach(fruit => {
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.innerHTML = `<div class="fruit-row">${fruitChipHtml(fruit)}<div class="fruit-main"><div class="row"><div style="font-weight:700;">${fruit.name}</div><span class="badge">${fruit.tier}</span></div><div class="muted" style="margin-top:8px;">Lực chiến: <b>${fmt(fruit.power)}</b></div><div class="muted">Giá shop: <b>${fruit.shopPrice == null ? 'Chưa bán trong shop' : `${fmt(fruit.shopPrice)} vàng`}</b></div><div class="muted">${fruit.eventOnly ? 'Trái sự kiện' : fruit.awakenable ? 'Có thể awakening' : 'Chưa thể awakening'}</div></div></div>`;
+        wrap.appendChild(div);
+      });
+    }
+
+    function renderSidebar() {
+      document.getElementById('powerText').textContent = fmt(getCurrentPower());
+      document.getElementById('currentFruitNameText').textContent = getFruitName(state.currentFruit);
+      const logs = document.getElementById('logList');
+      logs.innerHTML = '';
+      state.logs.forEach(log => {
+        const div = document.createElement('div');
+        div.className = 'log-item';
+        div.textContent = log;
+        logs.appendChild(div);
+      });
+    }
+
+    function render() {
+      updateTimers();
+      renderTop();
+      renderChapters();
+      renderGacha();
+      renderInventory();
+      renderShop();
+      renderTraveler();
+      renderHeaven();
+      renderFruitDex();
+      renderSidebar();
+    }
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => selectTab(btn.dataset.tab));
+    });
+    document.getElementById('exploreBtn').onclick = doExplore;
+    document.getElementById('fightBtn').onclick = fightMonster;
+    document.getElementById('gachaBtn').onclick = doGacha;
+    document.getElementById('spin1Btn').onclick = () => spinTraveler(1);
+    document.getElementById('spin6Btn').onclick = () => spinTraveler(6);
+    document.getElementById('giftcodeBtn').onclick = redeemGiftcode;
+
+    setInterval(render, 1000);
+    render();
+  </script>
+</body>
+</html>
+      grid-template-columns: 1.2fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .stats-grid, .mini-grid, .grid-5, .grid-4, .grid-3, .grid-2, .top-strip, .fruit-grid {
+      display: grid;
+      gap: 12px;
+    }
+    .stats-grid { grid-template-columns: repeat(5, 1fr); }
+    .mini-grid { grid-template-columns: repeat(6, 1fr); margin-top: 14px; }
+    .grid-5 { grid-template-columns: repeat(5, 1fr); }
+    .grid-4, .top-strip { grid-template-columns: repeat(4, 1fr); }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-2, .fruit-grid { grid-template-columns: repeat(2, 1fr); }
+    .stat, .mini {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+      background: #f8fafc;
+    }
+    .stat .label, .mini .label { color: var(--muted); font-size: 12px; }
+    .stat .value { font-size: 24px; font-weight: 800; margin-top: 4px; }
+    .mini .value { font-size: 15px; font-weight: 700; margin-top: 2px; }
+    .progress {
+      height: 12px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      overflow: hidden;
+      margin-top: 14px;
+    }
+    .progress > div {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #0f172a, #f59e0b);
+      transition: width .2s;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 1.4fr 0.8fr;
+      gap: 20px;
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .tab-btn {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 14px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .tab-btn.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .chapter-btn {
+      text-align: left;
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 16px;
+      padding: 14px;
+      cursor: pointer;
+    }
+    .chapter-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+    .chapter-btn.locked { opacity: .5; cursor: not-allowed; }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .stack { display: flex; flex-direction: column; gap: 12px; }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #e2e8f0;
+    }
+    button.action {
+      border: none;
+      background: var(--accent);
+      color: white;
+      border-radius: 14px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    button.action.secondary { background: #334155; }
+    button.action.light { background: white; color: var(--text); border: 1px solid var(--line); }
+    button.action:disabled { opacity: .55; cursor: not-allowed; }
+    .list-item {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+      background: white;
+    }
+    .muted { color: var(--muted); font-size: 13px; }
+    .log-list { display: flex; flex-direction: column; gap: 10px; }
+    .log-item {
+      background: #f8fafc;
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-size: 13px;
+      border: 1px solid var(--line);
+    }
+    .highlight {
+      background: linear-gradient(90deg, #fef3c7, #fff7ed);
+      border: 1px solid #fcd34d;
+    }
+    .shop-layout {
+      display: grid;
+      grid-template-columns: 0.95fr 1.05fr;
+      gap: 14px;
+    }
+    .top-strip {
+      margin-bottom: 14px;
+    }
+    .hidden { display: none !important; }
+    .fruit-chip {
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      position: relative;
+      flex: 0 0 54px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 8px 16px rgba(15, 23, 42, 0.08);
+      overflow: hidden;
+    }
+    .fruit-chip.large {
+      width: 74px;
+      height: 74px;
+      border-radius: 22px;
+      flex-basis: 74px;
+    }
+    .fruit-chip::before {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.95), rgba(255,255,255,.15) 35%, transparent 36%);
+      opacity: .95;
+    }
+    .fruit-chip::after {
+      content: "";
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      left: 50%;
+      top: 5px;
+      transform: translateX(-50%) rotate(12deg);
+      border-radius: 12px 12px 2px 12px;
+      background: linear-gradient(180deg, #22c55e, #166534);
+      box-shadow: 0 0 0 2px rgba(255,255,255,.35);
+    }
+    .fruit-core {
+      position: absolute;
+      inset: 10px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      color: rgba(255,255,255,.96);
+      font-size: 20px;
+      font-weight: 900;
+      text-shadow: 0 2px 8px rgba(0,0,0,.25);
+    }
+    .fruit-chip.large .fruit-core { font-size: 28px; }
+    .fruit-core::before {
+      content: "";
+      position: absolute;
+      inset: 6px;
+      border-radius: 999px;
+      border: 2px dashed rgba(255,255,255,.35);
+      opacity: .8;
+    }
+    .fruit-chip.thuong { background: linear-gradient(135deg, #cbd5e1, #94a3b8); }
+    .fruit-chip.phobien { background: linear-gradient(135deg, #34d399, #059669); }
+    .fruit-chip.hiem { background: linear-gradient(135deg, #60a5fa, #2563eb); }
+    .fruit-chip.sieuhiem { background: linear-gradient(135deg, #a78bfa, #7c3aed); }
+    .fruit-chip.huyenthoai { background: linear-gradient(135deg, #fbbf24, #d97706); }
+    .fruit-chip.dangcap { background: linear-gradient(135deg, #fb7185, #e11d48); }
+    .fruit-chip.fire { background: linear-gradient(135deg, #fb7185, #ea580c); }
+    .fruit-chip.ice { background: linear-gradient(135deg, #93c5fd, #38bdf8); }
+    .fruit-chip.dark { background: linear-gradient(135deg, #312e81, #111827); }
+    .fruit-chip.light { background: linear-gradient(135deg, #fde68a, #facc15); }
+    .fruit-chip.dragon { background: linear-gradient(135deg, #f97316, #b91c1c); }
+    .fruit-chip.water { background: linear-gradient(135deg, #67e8f9, #0ea5e9); }
+    .fruit-chip.sound { background: linear-gradient(135deg, #c084fc, #ec4899); }
+    .fruit-chip.angel { background: linear-gradient(135deg, #fef3c7, #f59e0b); }
+    .fruit-row { display: flex; gap: 12px; align-items: center; }
+    .fruit-main { flex: 1; min-width: 0; }
+    @media (max-width: 1100px) {
+      .hero, .layout, .shop-layout { grid-template-columns: 1fr; }
+      .stats-grid, .mini-grid, .grid-5, .grid-4, .grid-3, .grid-2, .top-strip, .fruit-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 700px) {
+      .stats-grid, .mini-grid, .grid-5, .grid-4, .grid-3, .grid-2, .top-strip, .fruit-grid { grid-template-columns: 1fr; }
+      .tabs { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <div class="card">
+        <div class="card-body">
+          <div style="font-size:32px;font-weight:900;">Game Sưu Tầm Trái Ác Quỷ</div>
+          <div class="muted" style="margin-top:8px;">Bản HTML độc lập để bạn có thể đem đi đăng web và chia sẻ cho bạn bè.</div>
+          <div class="muted" style="margin-top:6px;">Tỉ lệ gacha: Siêu hiếm 4%, Huyền thoại 1.3%, Rồng 0.1%. Trái Nước là trái sự kiện, không quay ra từ gacha thường.</div>
+          <div class="mini-grid">
+            <div class="mini"><div class="label">EXP</div><div class="value" id="xpText"></div></div>
+            <div class="mini"><div class="label">Thẻ siêu may mắn</div><div class="value" id="superLuckyText"></div></div>
+            <div class="mini"><div class="label">Thẻ random</div><div class="value" id="randomCardText"></div></div>
+            <div class="mini"><div class="label">Vé awakening</div><div class="value" id="awakeningTicketText"></div></div>
+            <div class="mini"><div class="label">Thẻ Lữ Khách</div><div class="value" id="travelerTicketText"></div></div>
+            <div class="mini"><div class="label">Cánh thiên thần</div><div class="value" id="angelWingText"></div></div>
+          </div>
+          <div class="progress"><div id="xpBar"></div></div>
+          <div class="muted" style="margin-top:10px;">Dữ liệu tự lưu trong trình duyệt bằng localStorage. Boss và các mốc hồi sinh cũng chạy theo thời gian thực.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="stats-grid">
+            <div class="stat"><div class="label">Vàng</div><div class="value" id="goldText"></div></div>
+            <div class="stat"><div class="label">Kim cương</div><div class="value" id="diamondText"></div></div>
+            <div class="stat"><div class="label">Level</div><div class="value" id="levelText"></div></div>
+            <div class="stat"><div class="label">Điểm Lữ Khách</div><div class="value" id="travelerPointText"></div></div>
+            <div class="stat"><div class="label">Bộ sưu tập</div><div class="value" id="collectionText"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="layout">
+      <div>
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="explore">Thám hiểm</button>
+          <button class="tab-btn" data-tab="gacha">Gacha</button>
+          <button class="tab-btn" data-tab="inventory">Túi đồ</button>
+          <button class="tab-btn" data-tab="shop">Shop</button>
+          <button class="tab-btn" data-tab="traveler">Lữ Khách</button>
+          <button class="tab-btn" data-tab="heaven">Thiên Đàng</button>
+          <button class="tab-btn" data-tab="fruits">Bách khoa</button>
+        </div>
+
+        <div id="tab-explore" class="tab-panel active">
+          <div class="card">
+            <div class="card-header">Thám hiểm & Boss</div>
+            <div class="card-body stack">
+              <div class="grid-5" id="chapterList"></div>
+              <div class="list-item" id="chapterInfo"></div>
+              <div class="progress hidden" id="exploreProgressWrap"><div id="exploreProgressBar"></div></div>
+              <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                <button class="action" id="exploreBtn">Bắt đầu thám hiểm</button>
+                <button class="action secondary" id="fightBtn">Đánh quái kiếm vàng</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-gacha" class="tab-panel">
+          <div class="card">
+            <div class="card-header">Người gacha</div>
+            <div class="card-body stack">
+              <div class="grid-4">
+                <div class="mini"><div class="label">Phí gacha</div><div class="value" id="gachaCostText"></div></div>
+                <div class="mini"><div class="label">Bonus may mắn</div><div class="value" id="luckText"></div></div>
+                <div class="mini"><div class="label">Tự dùng thẻ siêu may mắn</div><div class="value" id="autoLuckyText"></div></div>
+                <div class="mini"><div class="label">Lượt gacha còn lại</div><div class="value" id="gachaUsesText"></div></div>
+              </div>
+              <div class="muted" id="gachaResetNote"></div>
+              <div class="grid-3" id="rateList"></div>
+              <div><button class="action" id="gachaBtn">Quay gacha (ưu tiên thẻ random)</button></div>
+              <div class="list-item">
+                <div style="font-weight:700;">Giftcode</div>
+                <div class="muted" style="margin-top:6px;">Nhập mã quà để nhận tài nguyên. Mỗi mã chỉ dùng 1 lần.</div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+                  <input id="giftcodeInput" placeholder="Nhập giftcode" style="flex:1;min-width:220px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:12px;font:inherit;" />
+                  <button class="action" id="giftcodeBtn">Nhập mã</button>
+                </div>
+              </div>
+              <div id="gachaResultBox" class="hidden"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-inventory" class="tab-panel">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">Trái đang dùng</div>
+              <div class="card-body" id="currentFruitBox"></div>
+            </div>
+            <div class="card">
+              <div class="card-header">Inventory</div>
+              <div class="card-body stack" id="inventoryList"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-shop" class="tab-panel">
+          <div class="top-strip">
+            <div class="mini"><div class="label">Reset shop</div><div class="value" id="shopResetText"></div></div>
+            <div class="mini"><div class="label">Giảm giá Lữ Khách</div><div class="value" id="discountResetText"></div></div>
+            <div class="mini"><div class="label">Buff EXP</div><div class="value" id="expBuffText"></div></div>
+            <div class="mini"><div class="label">GAMEPASS</div><div class="value" id="gamepassOpenText"></div></div>
+          </div>
+          <div class="shop-layout">
+            <div class="stack">
+              <div class="card">
+                <div class="card-header">Vật phẩm chợ</div>
+                <div class="card-body stack" id="marketList"></div>
+              </div>
+              <div class="card">
+                <div class="card-header">GAMEPASS</div>
+                <div class="card-body stack" id="gamepassList"></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header">Trái ác quỷ đang bán</div>
+              <div class="card-body">
+                <div class="fruit-grid" id="shopFruitList"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-traveler" class="tab-panel">
+          <div class="stack">
+            <div class="card">
+              <div class="card-header">Sự kiện: Lữ Khách Tham Gia</div>
+              <div class="card-body">
+                <div class="grid-3">
+                  <div class="mini"><div class="label">Điểm Lữ Khách</div><div class="value" id="travelerPointText2"></div></div>
+                  <div class="mini"><div class="label">Thẻ Lữ Khách</div><div class="value" id="travelerTicketText2"></div></div>
+                  <div class="mini"><div class="label">Trái mới</div><div class="value">Nước · 8.500</div></div>
+                </div>
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="card"><div class="card-header">Nhiệm vụ ngày</div><div class="card-body stack" id="dailyMissionList"></div></div>
+              <div class="card"><div class="card-header">Nhiệm vụ tuần</div><div class="card-body stack" id="weeklyMissionList"></div></div>
+            </div>
+            <div class="grid-2">
+              <div class="card"><div class="card-header">Đổi điểm Lữ Khách</div><div class="card-body stack" id="travelerExchangeList"></div></div>
+              <div class="card">
+                <div class="card-header">Vòng quay Lữ Khách</div>
+                <div class="card-body stack">
+                  <div class="muted">1 thẻ / 1 lần · 5 thẻ / 5 lần + 1 lần miễn phí</div>
+                  <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                    <button class="action" id="spin1Btn">Quay 1 lần</button>
+                    <button class="action secondary" id="spin6Btn">Quay 5 + 1</button>
+                  </div>
+                  <div id="spinResultBox" class="list-item hidden"></div>
+                  <div class="grid-2" id="travelerSpinRewardList"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-heaven" class="tab-panel">
+          <div class="stack">
+            <div class="card">
+              <div class="card-header">Sự kiện mới: Sức mạnh của Thiên Đàng</div>
+              <div class="card-body">
+                <div class="grid-4">
+                  <div class="mini"><div class="label">Cánh thiên thần</div><div class="value" id="angelWingText2"></div></div>
+                  <div class="mini"><div class="label">Tỉ lệ nhận thêm</div><div class="value">30%</div></div>
+                  <div class="mini"><div class="label">Nguồn nhận</div><div class="value">Thám hiểm / Đánh quái / Nhiệm vụ</div></div>
+                  <div class="mini"><div class="label">Trái mới</div><div class="value">Thiên Thần · 200.000</div></div>
+                </div>
+                <div class="list-item" style="margin-top:12px;">
+                  <div style="font-weight:700;">Bảng tỉ lệ thưởng cánh thiên thần</div>
+                  <div class="muted" style="margin-top:8px;">80%: 50 cánh • 15%: 150 cánh • 3%: 1000 cánh • 2%: 2000 cánh</div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header">Shop Quỷ Đổi</div>
+              <div class="card-body stack" id="angelExchangeList"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-fruits" class="tab-panel">
+          <div class="card">
+            <div class="card-header">Danh sách trái ác quỷ</div>
+            <div class="card-body">
+              <div class="grid-3" id="fruitDexList"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stack">
+        <div class="card">
+          <div class="card-header">Nhân vật</div>
+          <div class="card-body">
+            <div class="list-item">
+              <div class="label muted">Sức mạnh hiện tại</div>
+              <div style="font-size:40px;font-weight:900;margin-top:4px;" id="powerText"></div>
+              <div class="muted" style="margin-top:10px;">Trái đang dùng: <b id="currentFruitNameText"></b></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">Nhật ký hoạt động</div>
+          <div class="card-body">
+            <div class="log-list" id="logList"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">Ghi chú luật game</div>
+          <div class="card-body stack muted">
+            <div>- Tất cả trái ác quỷ trong shop đã tăng giá thêm 40% nữa.</div>
+            <div>- Đã thêm tính năng nhập giftcode trong tab Gacha.</div>
+            <div>- Thám hiểm đã được làm lại thành 10 chương với khung level riêng.</div>
+            <div>- Level tối đa là 1000.</div>
+            <div>- Đánh quái kiếm vàng có cooldown 5 phút.</div>
+            <div>- GAMEPASS mở ở level 500.</div>
+            <div>- Mỗi chương có nhiệm vụ riêng, nhận tối đa 1 lần mỗi 1 phút để tăng EXP và cộng thêm vàng.</div>
+            <div>- EXP từng chương đã được cân lại để đầu chương khá dễ, giữa chương thường khoảng 2 nhiệm vụ lên 1 level và cuối chương khoảng 3 nhiệm vụ lên 1 level.</div>
+            <div>- Khi đủ level, chương tương ứng sẽ tự mở theo level hiện tại. Bạn cũng có thể quay lại chơi các chương cũ đã mở để farm lại.</div>
+            <div>- Chương mở khóa hiện được tính trực tiếp từ level hiện tại, không phụ thuộc save tiến độ cũ.</div>
+            <div>- Trong ô Thám hiểm có 2 nhánh: cày thường và Boss. Boss hồi sinh mỗi 20 phút, đánh trong 5 phút, thắng nhận +50 level.</div>
+            <div>- Tỉ lệ gacha: Siêu hiếm 4%, Huyền thoại 1.3%, Rồng 0.1%; Trái Nước không xuất hiện trong gacha thường.</div>
+            <div>- Mỗi 30 phút chỉ gacha được tối đa 10 lần. Nếu có thẻ random thì hệ thống sẽ ưu tiên dùng thẻ để quay.</div>
+            <div>- Tỉ lệ rơi kim cương của tất cả chương đã tăng thêm 10% tuyệt đối.</div>
+            <div>- Nhiệm vụ tuần Lữ Khách mới đã thêm: gacha ra trái hiếm / siêu hiếm / huyền thoại và mua đồ trong chợ.</div>
+            <div>- Sự kiện Sức mạnh của Thiên Đàng đã có tab riêng. Mỗi lần thám hiểm, đánh quái hoặc nhận nhiệm vụ có 30% nhận cánh thiên thần để đổi buff EXP hoặc Trái Thiên Thần.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SAVE_KEY = 'devil-fruit-game-html-save-v1';
+    const PRICE_MULTIPLIER = 1.96;
+    const EXPLORE_TIME_MULTIPLIER = 2.5;
+    const MAX_LEVEL = 1000;
+    const SHOP_RESET_INTERVAL_MS = 60 * 60 * 1000;
+    const TRAVELER_DISCOUNT_INTERVAL_MS = 30 * 60 * 1000;
+    const DAILY_RESET_INTERVAL_MS = 24 * 60 * 60 * 1000;
+    const WEEKLY_RESET_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
+    const MONSTER_FIGHT_COOLDOWN_MS = 5 * 60 * 1000;
+    const CHAPTER_MISSION_COOLDOWN_MS = 1 * 60 * 1000;
+    const BOSS_RESPAWN_MS = 20 * 60 * 1000;
+    const BOSS_FIGHT_DURATION_MS = 5 * 60 * 1000;
+    const GACHA_WINDOW_MS = 30 * 60 * 1000;
+    const GACHA_USES_PER_WINDOW = 10;
+
+    const baseFruits = [
+      { id: 'rocket', name: 'Rocket', tier: 'Thường', power: 50, shopPrice: 50, awakenable: false },
+      { id: 'bomb', name: 'Bom', tier: 'Thường', power: 110, shopPrice: 100, awakenable: false },
+      { id: 'smoke', name: 'Khói', tier: 'Thường', power: 150, shopPrice: 140, awakenable: false },
+      { id: 'spring', name: 'Lò xo', tier: 'Thường', power: 190, shopPrice: 180, awakenable: false },
+      { id: 'eagle', name: 'Đại bàng', tier: 'Thường', power: 300, shopPrice: 280, awakenable: false },
+      { id: 'fire', name: 'Lửa', tier: 'Phổ biến', power: 1100, shopPrice: 2000, awakenable: true },
+      { id: 'ice', name: 'Băng', tier: 'Phổ biến', power: 1300, shopPrice: 2400, awakenable: false },
+      { id: 'sand', name: 'Cát', tier: 'Phổ biến', power: 1600, shopPrice: 3000, awakenable: false },
+      { id: 'dark', name: 'Bóng tối', tier: 'Phổ biến', power: 2000, shopPrice: 3800, awakenable: true },
+      { id: 'diamond', name: 'Kim cương', tier: 'Phổ biến', power: 2350, shopPrice: 4400, awakenable: false },
+      { id: 'rubber', name: 'Cao su', tier: 'Phổ biến', power: 2500, shopPrice: 4700, awakenable: false },
+      { id: 'light', name: 'Ánh sáng', tier: 'Phổ biến', power: 2900, shopPrice: 5400, awakenable: true },
+      { id: 'barrier', name: 'Rào cản', tier: 'Phổ biến', power: 3000, shopPrice: 5600, awakenable: false },
+      { id: 'magma', name: 'Magma', tier: 'Phổ biến', power: 3700, shopPrice: 7000, awakenable: false },
+      { id: 'quake', name: 'Rung chấn', tier: 'Hiếm', power: 6000, shopPrice: 30000, awakenable: false },
+      { id: 'buddha', name: 'Phật tổ', tier: 'Hiếm', power: 6800, shopPrice: 34000, awakenable: false },
+      { id: 'love', name: 'Tình yêu', tier: 'Hiếm', power: 7100, shopPrice: 36000, awakenable: false },
+      { id: 'spider', name: 'Spider', tier: 'Hiếm', power: 7250, shopPrice: 37000, awakenable: false },
+      { id: 'sound', name: 'Âm thanh', tier: 'Hiếm', power: 7600, shopPrice: 39000, awakenable: true },
+      { id: 'phoenix', name: 'Phượng hoàng', tier: 'Hiếm', power: 8000, shopPrice: 42000, awakenable: false },
+      { id: 'water', name: 'Nước', tier: 'Hiếm', power: 8500, shopPrice: null, awakenable: false, shopDisabled: true, eventOnly: true },
+      { id: 'portal', name: 'Cổng dịch chuyển', tier: 'Siêu hiếm', power: 14000, shopPrice: 80000, awakenable: false },
+      { id: 'thunder', name: 'Sấm sét', tier: 'Siêu hiếm', power: 17500, shopPrice: 100000, awakenable: false },
+      { id: 'pain', name: 'Nỗi đau', tier: 'Siêu hiếm', power: 20000, shopPrice: 115000, awakenable: false },
+      { id: 'frost', name: 'Băng tuyết', tier: 'Siêu hiếm', power: 26300, shopPrice: 150000, awakenable: false },
+      { id: 'control', name: 'Điều khiển', tier: 'Huyền thoại', power: 53000, shopPrice: 180000, awakenable: false },
+      { id: 'soul', name: 'Linh hồn', tier: 'Huyền thoại', power: 72000, shopPrice: 250000, awakenable: false },
+      { id: 'dragon', name: 'Rồng', tier: 'Đẳng cấp', power: 150000, shopPrice: 500000, awakenable: true },
+      { id: 'angel', name: 'Thiên Thần', tier: 'Đẳng cấp', power: 200000, shopPrice: 900000, awakenable: false, eventOnly: true, shopDisabled: true },
+    ];
+
+    const fruits = baseFruits.map(fruit => ({
+      ...fruit,
+      shopPrice: fruit.shopPrice == null ? null : Math.floor(fruit.shopPrice * PRICE_MULTIPLIER),
+    }));
+
+    const tierOrder = ['Thường', 'Phổ biến', 'Hiếm', 'Siêu hiếm', 'Huyền thoại', 'Đẳng cấp'];
+    const baseRates = {
+      'Thường': 48,
+      'Phổ biến': 33,
+      'Hiếm': 13.6,
+      'Siêu hiếm': 4,
+      'Huyền thoại': 1.3,
+      'Đẳng cấp': 0.1,
+    };
+
+    const fruitDropWeights = {
+      'Thường': { rocket: 12.5, bomb: 10.8, smoke: 9.8, spring: 8.3, eagle: 6.6 },
+      'Phổ biến': { fire: 5.8, ice: 5.1, sand: 4.6, dark: 4.0, diamond: 3.7, rubber: 3.4, light: 2.7, barrier: 2.1, magma: 1.6 },
+      'Hiếm': { quake: 3.2, buddha: 2.6, love: 2.3, spider: 2.0, sound: 1.9, phoenix: 1.6 },
+      'Siêu hiếm': { portal: 1.4, thunder: 1.1, pain: 0.9, frost: 0.6 },
+      'Huyền thoại': { control: 0.8, soul: 0.5 },
+      'Đẳng cấp': { dragon: 0.1 },
+    };
+
+    const exploreChapters = [
+      { id: 1, name: 'Chương 1', minLevel: 1, maxLevel: 50, minSec: 45, maxSec: 90, goldMin: 100, goldMax: 800, exp: 35, diamondChance: 0.25, diamondReward: 3 },
+      { id: 2, name: 'Chương 2', minLevel: 51, maxLevel: 110, minSec: 50, maxSec: 105, goldMin: 500, goldMax: 1500, exp: 135, diamondChance: 0.28, diamondReward: 5 },
+      { id: 3, name: 'Chương 3', minLevel: 111, maxLevel: 190, minSec: 58, maxSec: 120, goldMin: 800, goldMax: 1650, exp: 330, diamondChance: 0.33, diamondReward: 8 },
+      { id: 4, name: 'Chương 4', minLevel: 191, maxLevel: 250, minSec: 65, maxSec: 135, goldMin: 1000, goldMax: 1800, exp: 460, diamondChance: 0.37, diamondReward: 10 },
+      { id: 5, name: 'Chương 5', minLevel: 251, maxLevel: 310, minSec: 75, maxSec: 150, goldMin: 1200, goldMax: 1900, exp: 570, diamondChance: 0.38, diamondReward: 11 },
+      { id: 6, name: 'Chương 6', minLevel: 311, maxLevel: 380, minSec: 82, maxSec: 165, goldMin: 1350, goldMax: 2100, exp: 700, diamondChance: 0.39, diamondReward: 14 },
+      { id: 7, name: 'Chương 7', minLevel: 381, maxLevel: 450, minSec: 90, maxSec: 180, goldMin: 1500, goldMax: 2200, exp: 810, diamondChance: 0.40, diamondReward: 15 },
+      { id: 8, name: 'Chương 8', minLevel: 451, maxLevel: 600, minSec: 100, maxSec: 195, goldMin: 1800, goldMax: 2500, exp: 1160, diamondChance: 0.42, diamondReward: 17 },
+      { id: 9, name: 'Chương 9', minLevel: 601, maxLevel: 800, minSec: 110, maxSec: 210, goldMin: 2000, goldMax: 2700, exp: 1620, diamondChance: 0.45, diamondReward: 20 },
+      { id: 10, name: 'Chương 10', minLevel: 801, maxLevel: 1000, minSec: 120, maxSec: 225, goldMin: 2200, goldMax: 3000, exp: 2020, diamondChance: 0.45, diamondReward: 21 },
+    ].map(chapter => ({
+      ...chapter,
+      minSec: Math.floor(chapter.minSec * EXPLORE_TIME_MULTIPLIER),
+      maxSec: Math.floor(chapter.maxSec * EXPLORE_TIME_MULTIPLIER),
+    }));
+
+    const marketItems = [
+      { id: 'luck5', name: 'Thuốc may mắn 5%', price: 500, effect: 5 },
+      { id: 'luck10', name: 'Thuốc may mắn 10%', price: 900, effect: 10 },
+      { id: 'luck20', name: 'Thuốc may mắn 20%', price: 1500, effect: 20 },
+      { id: 'awakening', name: 'Vé awakening', price: 3000 },
+    ];
+
+    const gamepassItems = [
+      { id: 'xp2_10m', name: 'x2 EXP trong 10 phút', price: 200, multiplier: 2, durationMs: 10 * 60 * 1000 },
+      { id: 'xp2_20m', name: 'x2 EXP trong 20 phút', price: 380, multiplier: 2, durationMs: 20 * 60 * 1000 },
+      { id: 'xp2_60m', name: 'x2 EXP trong 1 tiếng', price: 1050, multiplier: 2, durationMs: 60 * 60 * 1000 },
+      { id: 'xp3_5m', name: 'x3 EXP trong 5 phút', price: 500, multiplier: 3, durationMs: 5 * 60 * 1000 },
+      { id: 'xp3_10m', name: 'x3 EXP trong 10 phút', price: 950, multiplier: 3, durationMs: 10 * 60 * 1000 },
+    ];
+
+    const travelerDailyMissions = [
+      { id: 'd_lv_50', label: 'Tăng thêm 50 Lv', type: 'levelGain', target: 50, reward: 100 },
+      { id: 'd_lv_70', label: 'Tăng thêm 70 Lv', type: 'levelGain', target: 70, reward: 120 },
+      { id: 'd_lv_90', label: 'Tăng thêm 90 Lv', type: 'levelGain', target: 90, reward: 150 },
+      { id: 'd_lv_100', label: 'Tăng thêm 100 Lv', type: 'levelGain', target: 100, reward: 250 },
+      { id: 'd_spend_20000', label: 'Tiêu 20.000 vàng', type: 'goldSpent', target: 20000, reward: 100 },
+      { id: 'd_gain_1500', label: 'Nhận 1.500 vàng', type: 'goldEarned', target: 1500, reward: 200 },
+      { id: 'd_gain_5000', label: 'Nhận 5.000 vàng', type: 'goldEarned', target: 5000, reward: 250 },
+      { id: 'd_dia_5', label: 'Nhận 5 kim cương', type: 'diamondsEarned', target: 5, reward: 100 },
+      { id: 'd_dia_20', label: 'Nhận 20 kim cương', type: 'diamondsEarned', target: 20, reward: 400 },
+    ];
+
+    const travelerWeeklyMissions = [
+      { id: 'w_lv_500', label: 'Tăng thêm 500 Lv', type: 'levelGain', target: 500, reward: 1000 },
+      { id: 'w_lv_700', label: 'Tăng thêm 700 Lv', type: 'levelGain', target: 700, reward: 2000 },
+      { id: 'w_gold_30000', label: 'Nhận tổng 30.000 vàng', type: 'goldEarned', target: 30000, reward: 1300 },
+      { id: 'w_gold_50000', label: 'Nhận tổng 50.000 vàng', type: 'goldEarned', target: 50000, reward: 1500 },
+      { id: 'w_dia_100', label: 'Nhận tổng 100 kim cương', type: 'diamondsEarned', target: 100, reward: 2000 },
+      { id: 'w_dia_200', label: 'Nhận tổng 200 kim cương', type: 'diamondsEarned', target: 200, reward: 2000 },
+      { id: 'w_gacha_rare_3', label: 'Gacha ra 3 trái loại hiếm', type: 'gachaRare', target: 3, reward: 1300 },
+      { id: 'w_gacha_rare_5', label: 'Gacha ra 5 trái loại hiếm', type: 'gachaRare', target: 5, reward: 2400 },
+      { id: 'w_gacha_super_3', label: 'Gacha ra 3 trái loại siêu hiếm', type: 'gachaSuperRare', target: 3, reward: 2000 },
+      { id: 'w_gacha_super_5', label: 'Gacha ra 5 trái loại siêu hiếm', type: 'gachaSuperRare', target: 5, reward: 3500 },
+      { id: 'w_gacha_legend_1', label: 'Gacha ra 1 trái loại Huyền thoại', type: 'gachaLegendary', target: 1, reward: 5000 },
+      { id: 'w_market_buy_3', label: 'Mua đồ trong chợ 3 lần', type: 'marketPurchases', target: 3, reward: 500 },
+    ];
+
+    const travelerExchangeRewards = [
+      { id: 'ex_dia_5', cost: 400, label: '5 kim cương', kind: 'diamonds', amount: 5 },
+      { id: 'ex_dia_13', cost: 700, label: '13 kim cương', kind: 'diamonds', amount: 13 },
+      { id: 'ex_ticket_1', cost: 1300, label: '1 thẻ Lữ Khách', kind: 'travelerTickets', amount: 1 },
+      { id: 'ex_ticket_2', cost: 2500, label: '2 thẻ Lữ Khách', kind: 'travelerTickets', amount: 2 },
+      { id: 'ex_ticket_5', cost: 5500, label: '5 thẻ Lữ Khách', kind: 'travelerTickets', amount: 5 },
+      { id: 'ex_gold_fire', cost: 15000, label: 'Trái Lửa màu vàng óng ánh', kind: 'fruit', fruitId: 'fire_gold' },
+      { id: 'ex_red_ice', cost: 15000, label: 'Trái Băng màu đỏ rực', kind: 'fruit', fruitId: 'ice_red' },
+      { id: 'ex_water', cost: 35000, label: 'Trái Nước', kind: 'fruit', fruitId: 'water' },
+      { id: 'ex_blue_dragon', cost: 50000, label: 'Trái Rồng màu xanh lam rực rỡ', kind: 'fruit', fruitId: 'dragon_blue' },
+    ];
+
+    const angelExchangeRewards = [
+      { id: 'angel_x2_10', cost: 1000, label: 'x2 EXP trong 10 phút', kind: 'expBuff', multiplier: 2, durationMs: 10 * 60 * 1000 },
+      { id: 'angel_x2_20', cost: 1500, label: 'x2 EXP trong 20 phút', kind: 'expBuff', multiplier: 2, durationMs: 20 * 60 * 1000 },
+      { id: 'angel_x3_10', cost: 2000, label: 'x3 EXP trong 10 phút', kind: 'expBuff', multiplier: 3, durationMs: 10 * 60 * 1000 },
+      { id: 'angel_fruit', cost: 30000, label: 'Trái Thiên Thần', kind: 'fruit', fruitId: 'angel' },
+    ];
+
+    const travelerSpinRewards = [
+      { id: 'spin_dia_5', label: '5 kim cương', weight: 22, kind: 'diamonds', amount: 5 },
+      { id: 'spin_dia_8', label: '8 kim cương', weight: 18, kind: 'diamonds', amount: 8 },
+      { id: 'spin_dia_10', label: '10 kim cương', weight: 14, kind: 'diamonds', amount: 10 },
+      { id: 'spin_pts_500', label: '500 điểm Lữ Khách', weight: 14, kind: 'travelerPoints', amount: 500 },
+      { id: 'spin_pts_800', label: '800 điểm Lữ Khách', weight: 10, kind: 'travelerPoints', amount: 800 },
+      { id: 'spin_pts_1000', label: '1000 điểm Lữ Khách', weight: 8, kind: 'travelerPoints', amount: 1000 },
+      { id: 'spin_pts_1200', label: '1200 điểm Lữ Khách', weight: 5, kind: 'travelerPoints', amount: 1200 },
+      { id: 'spin_random_card', label: '1 thẻ random', weight: 5.5, kind: 'randomCards', amount: 1 },
+      { id: 'spin_awake', label: '1 vé awakening', weight: 2.7, kind: 'awakeningTickets', amount: 1 },
+      { id: 'spin_fire_gold', label: 'Trái Lửa màu vàng óng ánh', weight: 0.5, kind: 'fruit', fruitId: 'fire_gold' },
+      { id: 'spin_ice_red', label: 'Trái Băng màu đỏ rực', weight: 0.25, kind: 'fruit', fruitId: 'ice_red' },
+      { id: 'spin_water', label: 'Trái Nước', weight: 0.05, kind: 'fruit', fruitId: 'water' },
+    ];
+
+    const chapterMissionTemplates = {
+      1: [
+        { id: 'c1_easy', label: 'Dọn bãi biển Chương 1', expMultiplier: 1.5, goldBonus: 120 },
+        { id: 'c1_hard', label: 'Săn quái nhỏ Chương 1', expMultiplier: 1.8, goldBonus: 180 },
+      ],
+      2: [
+        { id: 'c2_easy', label: 'Khảo sát khu rừng Chương 2', expMultiplier: 1.6, goldBonus: 180 },
+        { id: 'c2_hard', label: 'Phá ổ quái Chương 2', expMultiplier: 1.9, goldBonus: 260 },
+      ],
+      3: [
+        { id: 'c3_easy', label: 'Dò đường cát lún Chương 3', expMultiplier: 1.7, goldBonus: 260 },
+        { id: 'c3_hard', label: 'Tiêu diệt lính canh Chương 3', expMultiplier: 2.0, goldBonus: 340 },
+      ],
+      4: [
+        { id: 'c4_easy', label: 'Dẹp trại giặc Chương 4', expMultiplier: 1.8, goldBonus: 320 },
+        { id: 'c4_hard', label: 'Đột kích pháo đài Chương 4', expMultiplier: 2.1, goldBonus: 420 },
+      ],
+      5: [
+        { id: 'c5_easy', label: 'Truy quét hải tặc Chương 5', expMultiplier: 1.9, goldBonus: 400 },
+        { id: 'c5_hard', label: 'Chiếm boong tàu Chương 5', expMultiplier: 2.2, goldBonus: 520 },
+      ],
+      6: [
+        { id: 'c6_easy', label: 'Tìm kho báu ẩn Chương 6', expMultiplier: 2.0, goldBonus: 500 },
+        { id: 'c6_hard', label: 'Dọn sạch mê cung Chương 6', expMultiplier: 2.3, goldBonus: 650 },
+      ],
+      7: [
+        { id: 'c7_easy', label: 'Đánh tan đội tuần tra Chương 7', expMultiplier: 2.1, goldBonus: 620 },
+        { id: 'c7_hard', label: 'Hạ thủ lĩnh Chương 7', expMultiplier: 2.4, goldBonus: 760 },
+      ],
+      8: [
+        { id: 'c8_easy', label: 'Khám phá tàn tích Chương 8', expMultiplier: 2.2, goldBonus: 760 },
+        { id: 'c8_hard', label: 'Càn quét quái tinh anh Chương 8', expMultiplier: 2.6, goldBonus: 920 },
+      ],
+      9: [
+        { id: 'c9_easy', label: 'Đột phá chiến tuyến Chương 9', expMultiplier: 2.4, goldBonus: 900 },
+        { id: 'c9_hard', label: 'Săn boss phụ Chương 9', expMultiplier: 2.8, goldBonus: 1100 },
+      ],
+      10: [
+        { id: 'c10_easy', label: 'Thanh trừng pháo đài Chương 10', expMultiplier: 2.6, goldBonus: 1150 },
+        { id: 'c10_hard', label: 'Đối đầu ác quỷ tối thượng Chương 10', expMultiplier: 3.0, goldBonus: 1400 },
+      ],
+    };
+
+    function randInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function chance(prob) {
+      return Math.random() < prob;
+    }
+
+    function weightedPick(weights) {
+      const total = weights.reduce((sum, item) => sum + item.weight, 0);
+      let cursor = Math.random() * total;
+      for (const item of weights) {
+        cursor -= item.weight;
+        if (cursor <= 0) return item.value;
+      }
+      return weights[weights.length - 1].value;
+    }
+
+    function fmt(value) {
+      return Number(value || 0).toLocaleString('vi-VN');
+    }
+
+    function alignFutureTime(intervalMs, now = Date.now()) {
+      return Math.floor(now / intervalMs) * intervalMs + intervalMs;
+    }
+
+    function getHighestChapterForLevel(level) {
+      const unlocked = exploreChapters.filter(chapter => level >= chapter.minLevel);
+      return unlocked.length ? unlocked[unlocked.length - 1].id : 1;
+    }
+
+    function getEffectiveUnlockedChapter() {
+      return Math.max(1, getHighestChapterForLevel(state.level));
+    }
+
+    function xpNeeded(level) {
+      if (level <= 40) return 18 + level * 4;
+      if (level <= 100) return 260 + (level - 40) * 24;
+      if (level <= 500) return 1700 + (level - 100) * 42;
+      return 18500 + (level - 500) * 65;
+    }
+
+    function getRates(luckPercent, hasSuperLucky) {
+      const rates = { ...baseRates };
+      const bonus = luckPercent + (hasSuperLucky ? 10 : 0);
+      rates['Thường'] = Math.max(20, rates['Thường'] - bonus * 0.9);
+      rates['Phổ biến'] = Math.max(18, rates['Phổ biến'] - bonus * 0.2);
+      rates['Hiếm'] += bonus * 0.45;
+      rates['Siêu hiếm'] += bonus * 0.35;
+      rates['Huyền thoại'] += bonus * 0.22;
+      rates['Đẳng cấp'] += bonus * 0.08;
+      const total = Object.values(rates).reduce((sum, value) => sum + value, 0);
+      const normalized = {};
+      Object.keys(rates).forEach(key => {
+        normalized[key] = rates[key] / total * 100;
+      });
+      return normalized;
+    }
+
+    function pickFruit(luckPercent, hasSuperLucky) {
+      const rates = getRates(luckPercent, hasSuperLucky);
+      const chosenTier = weightedPick(tierOrder.map(tier => ({ value: tier, weight: rates[tier] })));
+      const pool = fruits.filter(fruit => fruit.tier === chosenTier && !fruit.eventOnly);
+      const tierWeights = fruitDropWeights[chosenTier] || {};
+      return weightedPick(pool.map((fruit, index) => ({ value: fruit, weight: tierWeights[fruit.id] ?? (index + 1) })));
+    }
+
+    function randomShopInventory() {
+      const sellable = fruits.filter(fruit => !fruit.shopDisabled && fruit.shopPrice != null);
+      const count = randInt(5, 9);
+      return [...sellable]
+        .sort(() => Math.random() - 0.5)
+        .slice(0, count)
+        .map(fruit => {
+          const discount = chance(0.28) ? randInt(10, 50) : 0;
+          return {
+            ...fruit,
+            discount,
+            finalPrice: Math.floor(fruit.shopPrice * (100 - discount) / 100),
+          };
+        })
+        .sort((a, b) => (a.shopPrice || 0) - (b.shopPrice || 0));
+    }
+
+    function applyTravelerDiscount(stock) {
+      const chosen = [...stock].sort(() => Math.random() - 0.5).slice(0, 3).map(item => item.id);
+      return stock.map(item => {
+        if (!chosen.includes(item.id)) return item;
+        const eventDiscount = randInt(5, 30);
+        const bestDiscount = Math.max(item.discount || 0, eventDiscount);
+        return {
+          ...item,
+          discount: bestDiscount,
+          finalPrice: Math.floor((item.shopPrice || item.finalPrice) * (100 - bestDiscount) / 100),
+        };
+      });
+    }
+
+    function getFruitName(fruit) {
+      if (!fruit) return 'Chưa có';
+      const prefix = fruit.specialColor ? `✨ ${fruit.specialColor} ` : fruit.awakened ? '✨ ' : '';
+      const suffix = fruit.awakened ? ' (Awakened)' : '';
+      return `${prefix}${fruit.name}${suffix}`;
+    }
+
+    function normalizeTierClass(tier) {
+      if (tier === 'Thường') return 'thuong';
+      if (tier === 'Phổ biến') return 'phobien';
+      if (tier === 'Hiếm') return 'hiem';
+      if (tier === 'Siêu hiếm') return 'sieuhiem';
+      if (tier === 'Huyền thoại') return 'huyenthoai';
+      return 'dangcap';
+    }
+
+    function fruitEmoji(fruit) {
+      const iconMap = {
+        rocket: '🚀', bomb: '💣', smoke: '☁️', spring: '🌀', eagle: '🦅',
+        fire: '🔥', ice: '❄️', sand: '🟤', dark: '🌑', diamond: '💎', rubber: '🟣',
+        light: '✨', barrier: '🛡️', magma: '🌋', quake: '💥', buddha: '🪷',
+        love: '💖', spider: '🕷️', sound: '🎵', phoenix: '🪽', water: '💧',
+        portal: '🌀', thunder: '⚡', pain: '☠️', frost: '🧊', control: '🎮',
+        soul: '👻', dragon: '🐉', angel: '😇',
+      };
+      return iconMap[fruit.id] || '🍇';
+    }
+
+    function fruitChipHtml(fruit, size = 'small') {
+      const special = [fruit.id];
+      const large = size === 'large' ? ' large' : '';
+      return `<div class="fruit-chip ${normalizeTierClass(fruit.tier)} ${special.join(' ')}${large}"><div class="fruit-core">${fruitEmoji(fruit)}</div></div>`;
+    }
+
+    function applyTimedExpBuff(multiplier, durationMs, sourceLabel) {
+      const now = Date.now();
+      const startFrom = state.expBoostEndsAt > now ? state.expBoostEndsAt : now;
+      state.expBoostMultiplier = multiplier;
+      state.expBoostEndsAt = startFrom + durationMs;
+      state.logs = [`⚡ ${sourceLabel}: kích hoạt EXP x${multiplier} trong ${Math.round(durationMs / 60000)} phút.`, ...state.logs].slice(0, 16);
+    }
+
+    function maybeGrantAngelWings(sourceLabel) {
+      if (!chance(0.3)) return;
+      const roll = Math.random();
+      let wings = 50;
+      if (roll >= 0.98) wings = 2000;
+      else if (roll >= 0.95) wings = 1000;
+      else if (roll >= 0.80) wings = 150;
+      state.angelWings = (state.angelWings || 0) + wings;
+      state.logs = [`😇 ${sourceLabel}: nhận thêm ${fmt(wings)} cánh thiên thần.`, ...state.logs].slice(0, 16);
+    }
+
+    function makeSpecialFruit(fruitId) {
+      if (fruitId === 'fire_gold') {
+        const base = fruits.find(item => item.id === 'fire');
+        return { ...base, uid: `fire_gold_${Date.now()}`, specialColor: 'Lửa vàng óng ánh', power: 9800, awakened: false };
+      }
+      if (fruitId === 'ice_red') {
+        const base = fruits.find(item => item.id === 'ice');
+        return { ...base, uid: `ice_red_${Date.now()}`, specialColor: 'Băng đỏ rực', power: 11200, awakened: false };
+      }
+      if (fruitId === 'dragon_blue') {
+        const base = fruits.find(item => item.id === 'dragon');
+        return { ...base, uid: `dragon_blue_${Date.now()}`, specialColor: 'Rồng xanh lam rực rỡ', power: 195000, awakened: false };
+      }
+      const base = fruits.find(item => item.id === fruitId);
+      return { ...base, uid: `${fruitId}_${Date.now()}`, awakened: false };
+    }
+
+    function exchangeAngelReward(reward) {
+      if ((state.angelWings || 0) < reward.cost) return addLog(`❌ Không đủ cánh thiên thần để đổi ${reward.label}.`);
+      state.angelWings -= reward.cost;
+      if (reward.kind === 'expBuff') {
+        applyTimedExpBuff(reward.multiplier, reward.durationMs, 'Shop Quỷ Đổi');
+      } else if (reward.kind === 'fruit') {
+        const item = makeSpecialFruit(reward.fruitId);
+        state.inventory.push(item);
+        state.logs = [`😇 Shop Quỷ Đổi: nhận ${getFruitName(item)} vào túi.`, ...state.logs].slice(0, 16);
+      }
+      saveState();
+      render();
+    }
+
+    const giftcodeRewards = {
+      WELCOME2026: { gold: 50000, diamonds: 50, randomCards: 5, message: 'Quà chào mừng' },
+      ANGELPOWER: { angelWings: 5000, awakeningTickets: 1, message: 'Quà sự kiện Thiên Đàng' },
+      LUCKYFRUIT: { superLuckyCards: 3, randomCards: 10, message: 'Quà may mắn' },
+      BOSSHUNT: { gold: 100000, diamonds: 100, travelerPoints: 1500, message: 'Quà săn boss' },
+      DRAGON: { fruitId: 'dragon', message: 'Nhận trái Rồng' },
     };
 
     function redeemGiftcode() {
