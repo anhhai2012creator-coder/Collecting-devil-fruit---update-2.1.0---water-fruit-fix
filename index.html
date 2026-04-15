@@ -728,6 +728,1610 @@
       const multiplier = 1 + (chapterId - 1) * 0.2;
       return Math.floor(randInt(2000, 10000) * multiplier);
     }
+    function getExploreMoneyDRange(chapterId) {
+      const multiplier = 1 + (chapterId - 1) * 0.2;
+      return {
+        min: Math.floor(2000 * multiplier),
+        max: Math.floor(10000 * multiplier),
+      };
+    }
+    function getFightMoneyDReward(chapterId) {
+      const multiplier = 1 + (chapterId - 1) * 0.5;
+      return Math.floor(randInt(2000, 30000) * multiplier);
+    }
+    function getBossMoneyDReward(chapterId) {
+      const multiplier = 1 + (chapterId - 1) * 0.5;
+      return Math.floor(randInt(15000, 100000) * multiplier);
+    }
+
+    function maybeGrantAngelWings(sourceLabel) {
+      if (!chance(0.3)) return;
+      const roll = Math.random();
+      let wings = 50;
+      if (roll >= 0.98) wings = 2000;
+      else if (roll >= 0.95) wings = 1000;
+      else if (roll >= 0.80) wings = 150;
+      state.angelWings = (state.angelWings || 0) + wings;
+      state.logs = [`😇 ${sourceLabel}: nhận thêm ${fmt(wings)} cánh thiên thần.`, ...state.logs].slice(0, 18);
+    }
+
+    function applyTimedExpBuff(multiplier, durationMs, sourceLabel) {
+      const now = Date.now();
+      const startFrom = state.expBoostEndsAt > now ? state.expBoostEndsAt : now;
+      state.expBoostMultiplier = multiplier;
+      state.expBoostEndsAt = startFrom + durationMs;
+      state.logs = [`⚡ ${sourceLabel}: kích hoạt EXP x${multiplier} trong ${Math.round(durationMs / 60000)} phút.`, ...state.logs].slice(0, 18);
+    }
+
+    function createInitialSave(now = Date.now()) {
+      return {
+        gold: 1200,
+        diamonds: 850,
+        level: 1,
+        xp: 0,
+        selectedChapter: 1,
+        highestUnlockedChapter: 1,
+        ownedCharacters: [],
+        currentCharacterId: null,
+        travelerPoints: 0,
+        travelerTickets: 0,
+        moneyD: 0,
+        angelWings: 0,
+        normalUpgradeCards: 0,
+        superUpgradeCards: 0,
+        breakthroughCards: 0,
+        gachaResult: null,
+        travelerSpinResult: null,
+        logs: ['Đã chuyển sang hệ thống nhân vật.'],
+        shopRefreshAt: alignFutureTime(SHOP_RESET_INTERVAL_MS, now),
+        travelerDiscountAt: alignFutureTime(TRAVELER_DISCOUNT_INTERVAL_MS, now),
+        dailyClaimed: [],
+        weeklyClaimed: [],
+        dailyMissionStats: { goldEarned: 0, goldSpent: 0, diamondsEarned: 0 },
+        weeklyMissionStats: { goldEarned: 0, goldSpent: 0, diamondsEarned: 0, gachaA: 0, gachaS: 0, gachaSS: 0, marketPurchases: 0 },
+        baselineLevelDaily: 1,
+        baselineLevelWeekly: 1,
+        dailyResetAt: alignFutureTime(DAILY_RESET_INTERVAL_MS, now),
+        weeklyResetAt: alignFutureTime(WEEKLY_RESET_INTERVAL_MS, now),
+        expBoostMultiplier: 1,
+        expBoostEndsAt: 0,
+        nextMonsterFightAt: 0,
+        chapterMissionClaimedAt: 0,
+        chapterMissionMap: {},
+        exploreSubtab: 'grind',
+        bossRespawnAt: 0,
+        currentBoss: null,
+        bossFightEndsAt: 0,
+        gachaUsesLeft: GACHA_USES_PER_WINDOW,
+        gachaResetAt: alignFutureTime(GACHA_WINDOW_MS, now),
+        usedGiftcodes: [],
+      };
+    }
+
+    function migrateOldSave(parsed) {
+      const base = createInitialSave();
+      const result = {
+        ...base,
+        gold: parsed.gold ?? base.gold,
+        diamonds: parsed.diamonds ?? base.diamonds,
+        level: parsed.level ?? base.level,
+        xp: parsed.xp ?? base.xp,
+        selectedChapter: parsed.selectedChapter ?? base.selectedChapter,
+        highestUnlockedChapter: parsed.highestUnlockedChapter ?? base.highestUnlockedChapter,
+        travelerPoints: parsed.travelerPoints ?? base.travelerPoints,
+        travelerTickets: parsed.travelerTickets ?? base.travelerTickets,
+        moneyD: parsed.moneyD ?? base.moneyD,
+        angelWings: parsed.angelWings ?? base.angelWings,
+        expBoostMultiplier: parsed.expBoostMultiplier ?? base.expBoostMultiplier,
+        expBoostEndsAt: parsed.expBoostEndsAt ?? base.expBoostEndsAt,
+        nextMonsterFightAt: parsed.nextMonsterFightAt ?? base.nextMonsterFightAt,
+        chapterMissionClaimedAt: parsed.chapterMissionClaimedAt ?? base.chapterMissionClaimedAt,
+        chapterMissionMap: parsed.chapterMissionMap || {},
+        exploreSubtab: parsed.exploreSubtab || 'grind',
+        bossRespawnAt: parsed.bossRespawnAt ?? base.bossRespawnAt,
+        currentBoss: parsed.currentBoss ?? base.currentBoss,
+        bossFightEndsAt: parsed.bossFightEndsAt ?? base.bossFightEndsAt,
+        gachaUsesLeft: parsed.gachaUsesLeft ?? base.gachaUsesLeft,
+        gachaResetAt: parsed.gachaResetAt ?? base.gachaResetAt,
+        usedGiftcodes: parsed.usedGiftcodes || [],
+        logs: parsed.logs || base.logs,
+        dailyClaimed: parsed.dailyClaimed || [],
+        weeklyClaimed: parsed.weeklyClaimed || [],
+        dailyMissionStats: { ...base.dailyMissionStats, ...(parsed.dailyMissionStats || parsed.missionStats || {}) },
+        weeklyMissionStats: { ...base.weeklyMissionStats, ...(parsed.weeklyMissionStats || {}) },
+        baselineLevelDaily: parsed.baselineLevelDaily ?? parsed.baselineLevel ?? base.baselineLevelDaily,
+        baselineLevelWeekly: parsed.baselineLevelWeekly ?? parsed.baselineLevel ?? base.baselineLevelWeekly,
+        dailyResetAt: parsed.dailyResetAt ?? base.dailyResetAt,
+        weeklyResetAt: parsed.weeklyResetAt ?? base.weeklyResetAt,
+        normalUpgradeCards: parsed.normalUpgradeCards ?? 0,
+        superUpgradeCards: parsed.superUpgradeCards ?? 0,
+        breakthroughCards: parsed.breakthroughCards ?? 0,
+      };
+
+      if (parsed.ownedCharacters) {
+        result.ownedCharacters = parsed.ownedCharacters;
+        result.currentCharacterId = parsed.currentCharacterId || parsed.ownedCharacters[0]?.id || null;
+      } else {
+        const migrated = [];
+        const oldCurrent = parsed.currentFruit;
+        if (oldCurrent) migrated.push(createOwnedCharacter('goku_normal'));
+        result.ownedCharacters = migrated;
+        result.currentCharacterId = migrated[0]?.id || null;
+      }
+      return result;
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return createInitialSave();
+        const parsed = JSON.parse(raw);
+        return migrateOldSave(parsed);
+      } catch {
+        return createInitialSave();
+      }
+    }
+
+    let state = loadState();
+
+    function saveState() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
+
+    const giftcodeRewards = {
+      WELCOME2026: { gold: 50000, diamonds: 50, normalUpgradeCards: 5, message: 'Quà chào mừng' },
+      ANGELPOWER: { angelWings: 5000, breakthroughCards: 1, message: 'Quà sự kiện Thiên Đàng' },
+      LUCKYFRUIT: { superUpgradeCards: 3, normalUpgradeCards: 10, message: 'Quà may mắn' },
+      BOSSHUNT: { gold: 100000, diamonds: 100, travelerPoints: 1500, message: 'Quà săn boss' },
+      DRAGON: { characterId: 'goku_ssgod', message: 'Nhận nhân vật đặc biệt' },
+      THIENTHAN: { angelWings: 500, message: '500 cánh thiên thần' },
+      NEWTHIENTHAN: { angelWings: 1000, message: '1000 cánh thiên thần' },
+      TANBINH111: { expBuffMultiplier: 2, expBuffDurationMs: 60 * 60 * 1000, message: 'EXP x2 trong 1 giờ' },
+      LUKHACHTHOIKHONG: { travelerPoints: 5000, message: '5000 điểm Lữ Khách' },
+      LUKHACHXUYENKHONG: { travelerPoints: 2000, message: '2000 điểm Lữ Khách' },
+      ERRORSORRY: { diamonds: 1000, message: '1000 kim cương' },
+      NEWFRUITTT: { angelWings: 2000, diamonds: 2000, message: '2000 cánh thiên thần và 2000 kim cương' },
+      SIXSEVEN: { angelWings: 670, travelerPoints: 670, gold: 670, message: '670 cánh thiên thần, 670 điểm Lữ Khách và 670 vàng' },
+      SIEUKHUNGLUKHACHKETTHUCSK01: { travelerPoints: 50000, message: '50.000 điểm Lữ Khách' },
+      SIEUKHUNGLUKHACHKETTHUCSK: { travelerPoints: 20000, message: '20.000 điểm Lữ Khách' },
+      SUPERAWAKENING: { breakthroughCards: 2, message: '2 thẻ đột phá' },
+      TRANGNGU: { gold: 500000, randomCharacterTier: 'SS', message: 'Ngu đần thì phải chịu thôi Trang' },
+    };
+
+    function runSelfTests() {
+      console.assert(characters.length > 50, 'should include all new characters');
+      console.assert(GACHA_COST_ONE === 200, 'single gacha must cost 200 diamonds');
+      console.assert(GACHA_COST_TEN === 1500, 'ten gacha must cost 1500 diamonds');
+      console.assert(!('awakeningTickets' in createInitialSave()), 'old awakening tickets should be removed');
+      console.assert(giftcodeRewards.SUPERAWAKENING && giftcodeRewards.SUPERAWAKENING.breakthroughCards === 2, 'SUPERAWAKENING should give 2 breakthrough cards');
+      console.assert(getHighestChapterForLevel(91) === 2, 'level 91 should unlock chapter 2');
+      console.assert(getExploreMoneyDRange(10).max > getExploreMoneyDRange(1).max, 'higher chapters should give more tiền đ from explore');
+    }
+    runSelfTests();
+
+    function addLog(text) {
+      state.logs = [text, ...state.logs].slice(0, 18);
+      saveState();
+      render();
+    }
+    function recordGoldEarned(amount) {
+      state.dailyMissionStats.goldEarned += amount;
+      state.weeklyMissionStats.goldEarned += amount;
+    }
+    function recordGoldSpent(amount) {
+      state.dailyMissionStats.goldSpent += amount;
+      state.weeklyMissionStats.goldSpent += amount;
+    }
+    function recordDiamondsEarned(amount) {
+      state.dailyMissionStats.diamondsEarned += amount;
+      state.weeklyMissionStats.diamondsEarned += amount;
+    }
+    function recordGachaTier(tier) {
+      if (tier === 'A') state.weeklyMissionStats.gachaA += 1;
+      if (tier === 'S') state.weeklyMissionStats.gachaS += 1;
+      if (tier === 'SS') state.weeklyMissionStats.gachaSS += 1;
+    }
+    function recordMarketPurchase() { state.weeklyMissionStats.marketPurchases += 1; }
+
+    function applyXp(amount) {
+      const boosted = Math.floor(amount * state.expBoostMultiplier);
+      let xp = state.xp + boosted;
+      let level = state.level;
+      while (level < MAX_LEVEL && xp >= xpNeeded(level)) {
+        xp -= xpNeeded(level);
+        level += 1;
+        state.logs = [`🎉 Lên cấp ${level}!`, ...state.logs].slice(0, 18);
+      }
+      if (level >= MAX_LEVEL) { level = MAX_LEVEL; xp = 0; }
+      state.level = level;
+      state.xp = xp;
+      if (state.expBoostMultiplier > 1) {
+        state.logs = [`⚡ Buff EXP x${state.expBoostMultiplier} đã tăng EXP từ ${amount} lên ${boosted}.`, ...state.logs].slice(0, 18);
+      }
+      saveState();
+    }
+
+    function gachaResetText() {
+      const left = Math.max(0, state.gachaResetAt - Date.now());
+      return `${Math.floor(left / 60000)}:${String(Math.floor((left % 60000) / 1000)).padStart(2, '0')}`;
+    }
+
+    function getCurrentChapterMission(chapterId) { return state.chapterMissionMap[String(chapterId)] || null; }
+    function canFightMonster() { return Math.max(0, state.nextMonsterFightAt - Date.now()) <= 0; }
+    function fightCooldownText() {
+      const left = Math.max(0, state.nextMonsterFightAt - Date.now());
+      return `${Math.floor(left / 60000)}:${String(Math.floor((left % 60000) / 1000)).padStart(2, '0')}`;
+    }
+    function chapterMissionCooldownText() {
+      const left = Math.max(0, state.chapterMissionClaimedAt + CHAPTER_MISSION_COOLDOWN_MS - Date.now());
+      return `${Math.floor(left / 60000)}:${String(Math.floor((left % 60000) / 1000)).padStart(2, '0')}`;
+    }
+    function timerText(target) {
+      const left = Math.max(0, target - Date.now());
+      return `${String(Math.floor(left / 60000)).padStart(2, '0')}:${String(Math.floor((left % 60000) / 1000)).padStart(2, '0')}`;
+    }
+
+    function addCharacterToCollection(charId, source='gacha') {
+      const existing = getOwnedCharacter(charId);
+      const def = getCharacterDef(charId);
+      if (!def) return { fresh:false, duplicate:false };
+      if (existing) {
+        existing.copies = (existing.copies || 1) + 1;
+        state.normalUpgradeCards += tierRank(def.tier) + 1;
+        return { fresh:false, duplicate:true, reward:`+${tierRank(def.tier) + 1} thẻ nâng cấp thường` };
+      }
+      const unit = createOwnedCharacter(charId);
+      unit.source = source;
+      state.ownedCharacters.push(unit);
+      if (!state.currentCharacterId) state.currentCharacterId = charId;
+      return { fresh:true, duplicate:false };
+    }
+
+    function grantReward(reward, sourceLabel) {
+      if (reward.kind === 'diamonds') {
+        state.diamonds += reward.amount;
+        recordDiamondsEarned(reward.amount);
+      } else if (reward.kind === 'travelerPoints') {
+        state.travelerPoints += reward.amount;
+      } else if (reward.kind === 'travelerTickets') {
+        state.travelerTickets += reward.amount;
+      } else if (reward.kind === 'normalUpgradeCards') {
+        state.normalUpgradeCards += reward.amount;
+      } else if (reward.kind === 'superUpgradeCards') {
+        state.superUpgradeCards += reward.amount;
+      } else if (reward.kind === 'breakthroughCards') {
+        state.breakthroughCards += reward.amount;
+      } else if (reward.kind === 'angelWings') {
+        state.angelWings += reward.amount;
+      } else if (reward.kind === 'randomCharacterTier') {
+        const pool = characters.filter(item => item.tier === reward.tier);
+        for (let i = 0; i < reward.amount; i += 1) addCharacterToCollection(pool[randInt(0, pool.length - 1)].id, sourceLabel);
+      }
+      state.logs = [`🎁 ${sourceLabel}: nhận ${reward.label || reward.amount || ''}.`, ...state.logs].slice(0, 18);
+    }
+
+    function exchangeTravelerReward(reward) {
+      if (state.travelerPoints < reward.cost) return addLog(`❌ Không đủ điểm Lữ Khách để đổi ${reward.label}.`);
+      state.travelerPoints -= reward.cost;
+      grantReward(reward, 'Đổi điểm Lữ Khách');
+      saveState();
+      render();
+    }
+
+    function exchangeAngelReward(reward) {
+      if (state.angelWings < reward.cost) return addLog(`❌ Không đủ cánh thiên thần để đổi ${reward.label}.`);
+      state.angelWings -= reward.cost;
+      if (reward.kind === 'expBuff') applyTimedExpBuff(reward.multiplier, reward.durationMs, 'Shop Quỷ Đổi');
+      else if (reward.kind === 'superUpgradeCards') state.superUpgradeCards += reward.amount;
+      saveState();
+      addLog(`😇 Đổi thành công ${reward.label}.`);
+    }
+
+    function spinTraveler(count) {
+      const ticketCost = count === 6 ? 5 : 1;
+      if (state.travelerTickets < ticketCost) return addLog('❌ Không đủ thẻ Lữ Khách để quay.');
+      state.travelerTickets -= ticketCost;
+      const results = [];
+      for (let i = 0; i < count; i += 1) {
+        const reward = weightedPick(travelerSpinRewards.map(item => ({ value:item, weight:item.weight })));
+        results.push(reward.label);
+        grantReward(reward, 'Vòng quay Lữ Khách');
+      }
+      state.travelerSpinResult = results.join(' • ');
+      saveState();
+      render();
+    }
+
+    function claimMission(mission, scope) {
+      state.travelerPoints += mission.reward;
+      if (scope === 'daily') state.dailyClaimed.push(mission.id);
+      else state.weeklyClaimed.push(mission.id);
+      addLog(`📜 Hoàn thành nhiệm vụ ${mission.label}, nhận ${fmt(mission.reward)} điểm Lữ Khách.`);
+    }
+
+    function claimChapterMission() {
+      const now = Date.now();
+      if (now < state.chapterMissionClaimedAt + CHAPTER_MISSION_COOLDOWN_MS) {
+        const left = state.chapterMissionClaimedAt + CHAPTER_MISSION_COOLDOWN_MS - now;
+        return addLog(`⏳ Cần chờ ${Math.ceil(left / 1000)} giây nữa mới nhận nhiệm vụ chương mới.`);
+      }
+      const chapterId = state.selectedChapter;
+      const missionPool = chapterMissionTemplates[chapterId] || [];
+      if (!missionPool.length) return addLog('❌ Chương này chưa có nhiệm vụ riêng.');
+      const mission = missionPool[randInt(0, missionPool.length - 1)];
+      state.chapterMissionMap[String(chapterId)] = mission;
+      state.chapterMissionClaimedAt = now;
+      maybeGrantAngelWings('Nhận nhiệm vụ chương');
+      saveState();
+      addLog(`📘 Nhận nhiệm vụ ${mission.label}: x${mission.expMultiplier} EXP, +${fmt(mission.goldBonus)} vàng khi thám hiểm.`);
+    }
+
+    function updateTimers() {
+      const now = Date.now();
+      const maxByLevel = getEffectiveUnlockedChapter();
+      state.highestUnlockedChapter = maxByLevel;
+      if (state.selectedChapter > maxByLevel) state.selectedChapter = maxByLevel;
+      if (state.selectedChapter < 1) state.selectedChapter = 1;
+
+      if (!state.currentBoss && state.bossRespawnAt === 0 && state.bossFightEndsAt === 0) {
+        const chapter = exploreChapters.find(ch => ch.id === state.selectedChapter) || exploreChapters[0];
+        state.currentBoss = { chapterId: chapter.id, name: `Boss ${chapter.name}`, power: randInt(chapter.goldMin * 8, chapter.goldMax * 80) };
+      }
+
+      if (now >= state.dailyResetAt) {
+        state.dailyClaimed = [];
+        state.dailyMissionStats = { goldEarned: 0, goldSpent: 0, diamondsEarned: 0 };
+        state.baselineLevelDaily = state.level;
+        state.dailyResetAt = alignFutureTime(DAILY_RESET_INTERVAL_MS, now);
+      }
+      if (now >= state.weeklyResetAt) {
+        state.weeklyClaimed = [];
+        state.weeklyMissionStats = { goldEarned: 0, goldSpent: 0, diamondsEarned: 0, gachaA: 0, gachaS: 0, gachaSS: 0, marketPurchases: 0 };
+        state.baselineLevelWeekly = state.level;
+        state.weeklyResetAt = alignFutureTime(WEEKLY_RESET_INTERVAL_MS, now);
+      }
+      if (state.expBoostEndsAt > 0 && now >= state.expBoostEndsAt) {
+        state.expBoostMultiplier = 1;
+        state.expBoostEndsAt = 0;
+        state.logs = ['⏳ Buff EXP đã hết hiệu lực.', ...state.logs].slice(0, 18);
+      }
+      if (now >= state.gachaResetAt) {
+        state.gachaUsesLeft = GACHA_USES_PER_WINDOW;
+        state.gachaResetAt = alignFutureTime(GACHA_WINDOW_MS, now);
+        state.logs = ['🎰 Lượt gacha đã được làm mới: 10 lượt / 30 phút.', ...state.logs].slice(0, 18);
+      }
+      if (state.bossFightEndsAt > 0 && now >= state.bossFightEndsAt) {
+        const boss = state.currentBoss;
+        const effectivePower = getCurrentCharacterPower() * (0.95 + state.level * 0.01);
+        if (boss && effectivePower >= boss.power) {
+          state.level = Math.min(MAX_LEVEL, state.level + 50);
+          state.xp = 0;
+          const bossMoneyD = getBossMoneyDReward(boss.chapterId || state.selectedChapter);
+          state.moneyD += bossMoneyD;
+          state.logs = [`👑 Hạ gục ${boss.name}, nhận +50 level và ${fmt(bossMoneyD)} đ!`, ...state.logs].slice(0, 18);
+        } else if (boss) {
+          state.logs = [`💥 Thua ${boss.name}. Bạn không mất gì.`, ...state.logs].slice(0, 18);
+        }
+        state.bossFightEndsAt = 0;
+        state.bossRespawnAt = now + BOSS_RESPAWN_MS;
+        state.currentBoss = null;
+      }
+      if (state.bossRespawnAt > 0 && now >= state.bossRespawnAt) {
+        state.bossRespawnAt = 0;
+        const chapter = exploreChapters.find(ch => ch.id === state.selectedChapter) || exploreChapters[0];
+        state.currentBoss = { chapterId: chapter.id, name: `Boss ${chapter.name}`, power: randInt(chapter.goldMin * 8, chapter.goldMax * 80) };
+      }
+      saveState();
+    }
+
+    function doExplore() {
+      const chapter = exploreChapters.find(ch => ch.id === state.selectedChapter);
+      if (state.exploreSubtab !== 'grind') return addLog('🔁 Hãy chuyển sang nhánh Thám hiểm và đánh quái.');
+      if (state.selectedChapter > getEffectiveUnlockedChapter()) return addLog('🔒 Bạn chưa mở khóa chương này.');
+      if (window.__exploring) return;
+      const simulatedMs = Math.max(2400, Math.min(12000, randInt(chapter.minSec, chapter.maxSec) * 35));
+      window.__exploring = true;
+      document.getElementById('exploreProgressWrap').classList.remove('hidden');
+      const started = Date.now();
+      const timer = setInterval(() => {
+        const progress = Math.min(100, ((Date.now() - started) / simulatedMs) * 100);
+        document.getElementById('exploreProgressBar').style.width = `${progress}%`;
+      }, 80);
+      setTimeout(() => {
+        clearInterval(timer);
+        document.getElementById('exploreProgressBar').style.width = '100%';
+        window.__exploring = false;
+        const mission = getCurrentChapterMission(chapter.id);
+        const goldGain = randInt(chapter.goldMin, chapter.goldMax) + (mission ? mission.goldBonus : 0);
+        let extraMoneyD = 0;
+        if (chance(0.4)) {
+          extraMoneyD = getExploreMoneyDReward(chapter.id);
+          state.moneyD += extraMoneyD;
+        }
+        state.gold += goldGain;
+        recordGoldEarned(goldGain);
+        applyXp(Math.floor((chapter.exp + randInt(chapter.exp, chapter.exp * 3)) * (mission ? mission.expMultiplier : 1)));
+        state.logs = [`🧭 ${chapter.name}: nhận ${fmt(goldGain)} vàng${mission ? ` • nhiệm vụ ${mission.label} x${mission.expMultiplier} EXP` : ''}${extraMoneyD ? ` • +${fmt(extraMoneyD)} đ` : ''}.`, ...state.logs].slice(0, 18);
+        maybeGrantAngelWings('Thám hiểm');
+        if (chance(chapter.diamondChance)) {
+          state.diamonds += chapter.diamondReward;
+          recordDiamondsEarned(chapter.diamondReward);
+        }
+        saveState();
+        render();
+      }, simulatedMs);
+    }
+
+    function fightMonster() {
+      if (state.exploreSubtab !== 'grind') return addLog('🔁 Hãy chuyển sang nhánh Thám hiểm và đánh quái.');
+      if (!state.currentCharacterId) return addLog('❌ Bạn phải có nhân vật đang dùng mới có thể đánh quái.');
+      const now = Date.now();
+      if (now < state.nextMonsterFightAt) {
+        const secondsLeft = Math.ceil((state.nextMonsterFightAt - now) / 1000);
+        return addLog(`⏳ Bạn cần chờ ${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')} nữa mới có thể đánh quái tiếp.`);
+      }
+      state.nextMonsterFightAt = now + MONSTER_FIGHT_COOLDOWN_MS;
+      const stagePower = state.selectedChapter * 25000;
+      const effectivePower = getCurrentCharacterPower() * (0.95 + state.level * 0.01);
+      const successRate = Math.max(0.12, Math.min(0.95, effectivePower / (effectivePower + stagePower)));
+      if (!chance(successRate)) {
+        saveState();
+        return addLog(`💀 Đánh quái thất bại. Tỉ lệ thắng ${(successRate * 100).toFixed(0)}%.`);
+      }
+      const goldGain = randInt(Math.max(50, Math.floor(effectivePower / 20)), Math.max(120, Math.floor(effectivePower / 12)));
+      const xpGain = randInt(12, 28) + Math.floor(state.level * 0.5);
+      let bonusMoney = 0;
+      if (chance(0.8)) {
+        bonusMoney = getFightMoneyDReward(state.selectedChapter);
+        state.moneyD += bonusMoney;
+      }
+      state.gold += goldGain;
+      recordGoldEarned(goldGain);
+      applyXp(xpGain);
+      maybeGrantAngelWings('Đánh quái');
+      saveState();
+      addLog(`⚔️ Đánh quái thành công (${(successRate * 100).toFixed(0)}%), nhận ${fmt(goldGain)} vàng và ${xpGain} EXP${bonusMoney ? ` • thưởng thêm ${fmt(bonusMoney)} đ` : ''}.`);
+    }
+
+    function startBossFight() {
+      if (state.exploreSubtab !== 'boss') return addLog('🔁 Hãy chuyển sang nhánh Boss.');
+      if (state.bossFightEndsAt > 0) return addLog('⏳ Bạn đang đánh boss rồi.');
+      if (state.bossRespawnAt > Date.now()) return addLog(`⏳ Boss chưa hồi sinh. Còn ${timerText(state.bossRespawnAt)}.`);
+      if (!state.currentBoss || state.currentBoss.chapterId !== state.selectedChapter) {
+        const chapter = exploreChapters.find(ch => ch.id === state.selectedChapter) || exploreChapters[0];
+        state.currentBoss = { chapterId: chapter.id, name: `Boss ${chapter.name}`, power: randInt(chapter.goldMin * 8, chapter.goldMax * 80) };
+      }
+      state.bossFightEndsAt = Date.now() + BOSS_FIGHT_DURATION_MS;
+      saveState();
+      addLog(`⚔️ Bắt đầu đánh ${state.currentBoss.name}. Thời gian chiến đấu: 5 phút.`);
+    }
+
+    function doGacha(count) {
+      const cost = count === 10 ? GACHA_COST_TEN : GACHA_COST_ONE;
+      if (state.gachaUsesLeft < count) return addLog(`⏳ Không đủ lượt gacha. Còn ${state.gachaUsesLeft}/${GACHA_USES_PER_WINDOW}.`);
+      if (state.diamonds < cost) return addLog(`❌ Không đủ kim cương để gacha (${fmt(cost)} 💎).`);
+      state.diamonds -= cost;
+      state.gachaUsesLeft -= count;
+      const results = [];
+      for (let i = 0; i < count; i += 1) {
+        const picked = pickCharacter();
+        const outcome = addCharacterToCollection(picked.id, 'gacha');
+        recordGachaTier(picked.tier);
+        results.push(`${picked.name}${outcome.duplicate ? ` (trùng, ${outcome.reward})` : ''}`);
+      }
+      state.gachaResult = results;
+      saveState();
+      addLog(`🎁 Gacha ${count} lần hoàn tất.`);
+      render();
+    }
+
+    function buyUpgradeItem(item) {
+      if (item.currency === 'gold' && state.gold < item.price) return addLog(`❌ Không đủ vàng để mua ${item.name}.`);
+      if (item.currency === 'diamonds' && state.diamonds < item.price) return addLog(`❌ Không đủ kim cương để mua ${item.name}.`);
+      if (item.currency === 'gold') {
+        state.gold -= item.price;
+        recordGoldSpent(item.price);
+      } else {
+        state.diamonds -= item.price;
+      }
+      state[item.rewardKey] += item.amount;
+      recordMarketPurchase();
+      saveState();
+      addLog(`🛒 Mua thành công ${item.amount} ${item.name}.`);
+    }
+
+    function upgradeCharacter(charId, mode) {
+      const unit = getOwnedCharacter(charId);
+      if (!unit) return;
+      const maxLevel = getCharacterMaxLevel(unit);
+      if (unit.charLevel >= maxLevel) return addLog('❌ Nhân vật đã chạm giới hạn cấp hiện tại.');
+      if (mode === 'normal') {
+        if (state.normalUpgradeCards < 1) return addLog('❌ Không đủ thẻ nâng cấp thường.');
+        state.normalUpgradeCards -= 1;
+        unit.charLevel += 1;
+      } else {
+        if (state.superUpgradeCards < 1) return addLog('❌ Không đủ thẻ nâng cấp siêu cấp.');
+        state.superUpgradeCards -= 1;
+        unit.charLevel = Math.min(maxLevel, unit.charLevel + 3);
+      }
+      saveState();
+      addLog(`⬆️ Đã nâng cấp ${getCharacterDef(charId).name} lên cấp ${unit.charLevel}.`);
+    }
+
+    function breakthroughCharacter(charId) {
+      const unit = getOwnedCharacter(charId);
+      if (!unit) return;
+      if (state.breakthroughCards < 1) return addLog('❌ Không đủ thẻ đột phá.');
+      if (unit.breakthrough >= 5) return addLog('❌ Nhân vật đã đột phá tối đa.');
+      if (unit.charLevel < getCharacterMaxLevel(unit)) return addLog('❌ Hãy nâng nhân vật lên max cấp hiện tại trước.');
+      state.breakthroughCards -= 1;
+      unit.breakthrough += 1;
+      saveState();
+      addLog(`🌟 ${getCharacterDef(charId).name} đã đột phá +${unit.breakthrough}.`);
+    }
+
+    function setCurrentCharacter(charId) {
+      if (!getOwnedCharacter(charId)) return;
+      state.currentCharacterId = charId;
+      saveState();
+      render();
+    }
+
+    function redeemGiftcode() {
+      const input = document.getElementById('giftcodeInput');
+      const raw = (input.value || '').trim().toUpperCase();
+      if (!raw) return addLog('❌ Hãy nhập giftcode trước.');
+      if ((state.usedGiftcodes || []).includes(raw)) return addLog('❌ Giftcode này đã được dùng rồi.');
+      const reward = giftcodeRewards[raw];
+      if (!reward) return addLog('❌ Giftcode không tồn tại hoặc đã hết hạn.');
+      if (reward.gold) { state.gold += reward.gold; recordGoldEarned(reward.gold); }
+      if (reward.diamonds) { state.diamonds += reward.diamonds; recordDiamondsEarned(reward.diamonds); }
+      if (reward.travelerPoints) state.travelerPoints += reward.travelerPoints;
+      if (reward.angelWings) state.angelWings += reward.angelWings;
+      if (reward.normalUpgradeCards) state.normalUpgradeCards += reward.normalUpgradeCards;
+      if (reward.superUpgradeCards) state.superUpgradeCards += reward.superUpgradeCards;
+      if (reward.breakthroughCards) state.breakthroughCards += reward.breakthroughCards;
+      if (reward.expBuffMultiplier && reward.expBuffDurationMs) applyTimedExpBuff(reward.expBuffMultiplier, reward.expBuffDurationMs, `Giftcode ${raw}`);
+      if (reward.characterId) addCharacterToCollection(reward.characterId, 'giftcode');
+      if (reward.randomCharacterTier) {
+        const pool = characters.filter(item => item.tier === reward.randomCharacterTier);
+        addCharacterToCollection(pool[randInt(0, pool.length - 1)].id, 'giftcode');
+      }
+      state.usedGiftcodes.push(raw);
+      input.value = '';
+      saveState();
+      addLog(`🎁 Nhập giftcode ${raw} thành công: ${reward.message}.`);
+    }
+
+    function selectTab(name) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === name));
+      document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.toggle('active', panel.id === `tab-${name}`));
+    }
+
+    function selectExploreSubtab(name) {
+      state.exploreSubtab = name;
+      saveState();
+      render();
+    }
+
+    function setText(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    }
+
+    function renderTop() {
+      setText('goldText', fmt(state.gold));
+      setText('diamondText', fmt(state.diamonds));
+      setText('diamondHeaderText', fmt(state.diamonds));
+      setText('levelText', fmt(state.level));
+      setText('travelerPointText', fmt(state.travelerPoints));
+      setText('travelerPointHeaderText', fmt(state.travelerPoints));
+      setText('travelerPointMini', fmt(state.travelerPoints));
+      setText('moneyDText', fmt(state.moneyD || 0));
+      setText('breakthroughText', fmt(state.breakthroughCards || 0));
+      setText('collectionText', fmt((state.ownedCharacters || []).length));
+      setText('xpText', `${fmt(state.xp)}/${fmt(xpNeeded(state.level))}`);
+      setText('angelWingHeaderText', fmt(state.angelWings || 0));
+      setText('angelWingTextMini', fmt(state.angelWings || 0));
+      setText('travelerTicketMini', fmt(state.travelerTickets || 0));
+      setText('normalUpgradeText', fmt(state.normalUpgradeCards || 0));
+      setText('superUpgradeText', fmt(state.superUpgradeCards || 0));
+      const xpBar = document.getElementById('xpBar');
+      if (xpBar) xpBar.style.width = `${Math.min(100, state.xp / xpNeeded(state.level) * 100)}%`;
+    }
+
+    function renderChapters() {
+      const effectiveUnlocked = getEffectiveUnlockedChapter();
+      const wrap = document.getElementById('chapterList');
+      wrap.innerHTML = '';
+      exploreChapters.forEach(item => {
+        const btn = document.createElement('button');
+        btn.className = `chapter-btn ${state.selectedChapter === item.id ? 'active' : ''} ${item.id > effectiveUnlocked ? 'locked' : ''}`;
+        btn.innerHTML = `<div style="font-weight:700;">${item.name} ${item.id > effectiveUnlocked ? '🔒' : ''}</div><div class="muted" style="margin-top:4px;">Lv ${item.minLevel}-${item.maxLevel}</div><div class="muted">${fmt(item.goldMin)} - ${fmt(item.goldMax)} vàng</div>`;
+        btn.onclick = () => {
+          if (item.id <= effectiveUnlocked) {
+            state.selectedChapter = item.id;
+            if (state.exploreSubtab === 'boss') {
+              state.currentBoss = { chapterId: item.id, name: `Boss ${item.name}`, power: randInt(item.goldMin * 8, item.goldMax * 80) };
+            }
+            saveState();
+            render();
+          }
+        };
+        wrap.appendChild(btn);
+      });
+
+      const chapter = exploreChapters.find(item => item.id === state.selectedChapter);
+      const mission = getCurrentChapterMission(chapter.id);
+      const shownBoss = state.currentBoss && state.currentBoss.chapterId === chapter.id ? state.currentBoss : { chapterId: chapter.id, name: `Boss ${chapter.name}`, power: randInt(chapter.goldMin * 8, chapter.goldMax * 80) };
+      if (!state.currentBoss && state.bossRespawnAt === 0 && state.bossFightEndsAt === 0) state.currentBoss = shownBoss;
+      const bossReady = state.bossRespawnAt <= Date.now() && state.bossFightEndsAt === 0;
+      const bossFighting = state.bossFightEndsAt > Date.now();
+
+      document.getElementById('chapterInfo').innerHTML = `
+        <div class="subtabs">
+          <button class="subtab-btn ${state.exploreSubtab === 'grind' ? 'active' : ''}" id="subtabGrindBtn">Thám hiểm và đánh quái</button>
+          <button class="subtab-btn ${state.exploreSubtab === 'boss' ? 'active' : ''}" id="subtabBossBtn">Boss</button>
+        </div>
+        ${state.exploreSubtab === 'grind' ? `
+          <div>
+            <div class="grid-4">
+              <div><b>Level:</b> ${chapter.minLevel}-${chapter.maxLevel}</div>
+              <div><b>Vàng:</b> ${fmt(chapter.goldMin)}-${fmt(chapter.goldMax)}</div>
+              <div><b>Kim cương:</b> ${(chapter.diamondChance * 100).toFixed(0)}% · ${chapter.diamondReward}</div>
+              <div><b>Tiền đ:</b> 40% · ${fmt(getExploreMoneyDRange(chapter.id).min)}-${fmt(getExploreMoneyDRange(chapter.id).max)}</div>
+            </div>
+            <div class="list-item" style="margin-top:12px;background:#f8fafc;">
+              <div class="row">
+                <div>
+                  <div style="font-weight:700;">Nhiệm vụ chương</div>
+                  <div class="muted">${mission ? `${mission.label} • x${mission.expMultiplier} EXP • +${fmt(mission.goldBonus)} vàng` : 'Chưa nhận nhiệm vụ cho chương này.'}</div>
+                </div>
+                <button class="action" id="claimChapterMissionBtn">${Date.now() >= state.chapterMissionClaimedAt + CHAPTER_MISSION_COOLDOWN_MS ? 'Nhận nhiệm vụ' : `Chờ ${chapterMissionCooldownText()}`}</button>
+              </div>
+            </div>
+          </div>` : `
+          <div class="list-item" style="background:#f8fafc;">
+            <div class="row">
+              <div>
+                <div style="font-weight:700;">${shownBoss.name}</div>
+                <div class="muted">Lực chiến boss: <b>${fmt(shownBoss.power)}</b></div>
+                <div class="muted">Đánh boss tốn 5 phút. Nếu thắng: <b>+50 level</b> và nhận tiền đ. Nếu thua: <b>không mất gì</b>.</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="muted">${bossFighting ? `Đang chiến đấu • còn ${timerText(state.bossFightEndsAt)}` : bossReady ? 'Boss sẵn sàng' : `Hồi sinh sau ${timerText(state.bossRespawnAt)}`}</div>
+                <button class="action" id="startBossBtn" ${bossReady ? '' : 'disabled'} style="margin-top:8px;">Đánh boss</button>
+              </div>
+            </div>
+          </div>`}
+      `;
+      document.getElementById('subtabGrindBtn').onclick = () => selectExploreSubtab('grind');
+      document.getElementById('subtabBossBtn').onclick = () => selectExploreSubtab('boss');
+      if (state.exploreSubtab === 'grind') {
+        const missionBtn = document.getElementById('claimChapterMissionBtn');
+        missionBtn.disabled = Date.now() < state.chapterMissionClaimedAt + CHAPTER_MISSION_COOLDOWN_MS;
+        missionBtn.onclick = claimChapterMission;
+      } else {
+        const bossBtn = document.getElementById('startBossBtn');
+        if (bossBtn) bossBtn.onclick = startBossFight;
+      }
+      document.getElementById('fightBtn').disabled = !canFightMonster() || state.exploreSubtab !== 'grind';
+      document.getElementById('fightBtn').textContent = state.exploreSubtab !== 'grind' ? 'Chỉ dùng ở cày thường' : (canFightMonster() ? 'Đánh quái kiếm vàng' : `Chờ ${fightCooldownText()}`);
+      document.getElementById('exploreBtn').disabled = state.exploreSubtab !== 'grind' || window.__exploring;
+      document.getElementById('exploreBtn').textContent = state.exploreSubtab !== 'grind' ? 'Chỉ dùng ở cày thường' : 'Bắt đầu thám hiểm';
+    }
+
+    function renderGacha() {
+      document.getElementById('gachaUsesText').textContent = `${state.gachaUsesLeft}/${GACHA_USES_PER_WINDOW}`;
+      document.getElementById('gachaResetText').textContent = gachaResetText();
+      const rates = getGachaRates();
+      const rateList = document.getElementById('rateList');
+      rateList.innerHTML = '';
+      tierOrder.forEach(tier => {
+        const info = tierInfo[tier];
+        const div = document.createElement('div');
+        div.className = 'mini';
+        div.innerHTML = `<div class="label">Bậc ${tier}</div><div class="value">${rates[tier].toFixed(1)}%</div>`;
+        rateList.appendChild(div);
+      });
+      const box = document.getElementById('gachaResultBox');
+      if (!state.gachaResult || !state.gachaResult.length) {
+        box.className = 'hidden';
+        box.innerHTML = '';
+      } else {
+        box.className = 'list-item';
+        box.innerHTML = state.gachaResult.map(name => `<div class="muted">• ${name}</div>`).join('');
+      }
+    }
+
+    function renderCharacters() {
+      const currentBox = document.getElementById('currentCharacterBox');
+      const current = getOwnedCharacter(state.currentCharacterId);
+      if (!current) {
+        currentBox.innerHTML = '<div class="list-item muted">Bạn chưa có nhân vật nào.</div>';
+      } else {
+        const def = getCharacterDef(current.id);
+        currentBox.innerHTML = `
+          <div class="list-item highlight">
+            <div class="unit-row">${characterChipHtml(def, 'large')}<div class="unit-main"><div class="row"><div style="font-size:24px;font-weight:900;">${def.name}</div><span class="badge ${normalizeTierClass(def.tier)}">${def.tier}</span></div>
+            <div class="muted" style="margin-top:8px;">Lực chiến gốc: ${fmt(def.power)}</div>
+            <div class="muted">Lực chiến hiện tại: ${fmt(getCharacterPower(current))}</div>
+            <div class="muted">Cấp nhân vật: ${current.charLevel}/${getCharacterMaxLevel(current)} • Đột phá: +${current.breakthrough}</div>
+            <div class="muted">Bản sao: ${current.copies || 1}</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+              <button class="action" id="upgradeNormalBtn">+1 bằng thẻ thường</button>
+              <button class="action secondary" id="upgradeSuperBtn">+3 bằng thẻ siêu cấp</button>
+              <button class="action light" id="breakthroughBtn">Đột phá</button>
+            </div></div></div>
+          </div>`;
+        document.getElementById('upgradeNormalBtn').onclick = () => upgradeCharacter(current.id, 'normal');
+        document.getElementById('upgradeSuperBtn').onclick = () => upgradeCharacter(current.id, 'super');
+        document.getElementById('breakthroughBtn').onclick = () => breakthroughCharacter(current.id);
+      }
+
+      const ownedWrap = document.getElementById('ownedCharacterList');
+      ownedWrap.innerHTML = '';
+      if (!state.ownedCharacters.length) {
+        ownedWrap.innerHTML = '<div class="list-item muted">Chưa có nhân vật.</div>';
+      } else {
+        [...state.ownedCharacters].sort((a,b) => getCharacterPower(b) - getCharacterPower(a)).forEach(unit => {
+          const def = getCharacterDef(unit.id);
+          const div = document.createElement('div');
+          div.className = 'list-item';
+          div.innerHTML = `<div class="unit-row">${characterChipHtml(def)}<div class="unit-main"><div class="row"><div><div style="font-weight:700;">${def.name}</div><div class="muted">${fmt(getCharacterPower(unit))} lực chiến • cấp ${unit.charLevel}</div></div><span class="badge ${normalizeTierClass(def.tier)}">${def.tier}</span></div><div style="margin-top:10px;"><button class="action secondary">Dùng nhân vật này</button></div></div></div>`;
+          div.querySelector('button').onclick = () => setCurrentCharacter(unit.id);
+          ownedWrap.appendChild(div);
+        });
+      }
+
+      const missingWrap = document.getElementById('missingCharacterList');
+      missingWrap.innerHTML = '';
+      const ownedIds = new Set(state.ownedCharacters.map(item => item.id));
+      characters.filter(item => !ownedIds.has(item.id)).forEach(def => {
+        const div = document.createElement('div');
+        div.className = 'list-item unit-card locked';
+        div.innerHTML = `<div class="unit-row">${characterChipHtml(def)}<div class="unit-main"><div class="row"><div><div style="font-weight:700;">${def.name}</div><div class="muted">${fmt(def.power)} lực chiến</div></div><span class="badge ${normalizeTierClass(def.tier)}">${def.tier}</span></div></div></div>`;
+        missingWrap.appendChild(div);
+      });
+    }
+
+    function renderShop() {
+      const wrap = document.getElementById('upgradeShopList');
+      wrap.innerHTML = '';
+      upgradeShopItems.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'list-item row';
+        div.innerHTML = `<div><div style="font-weight:700;">${item.name}</div><div class="muted">Thanh toán bằng ${item.currency === 'gold' ? 'vàng' : 'kim cương'}</div></div><div style="display:flex;gap:8px;align-items:center;"><b>${fmt(item.price)} ${item.currency === 'gold' ? 'vàng' : '💎'}</b><button class="action">Mua</button></div>`;
+        div.querySelector('button').onclick = () => buyUpgradeItem(item);
+        wrap.appendChild(div);
+      });
+    }
+
+    function renderTraveler() {
+      const dailyProgress = {
+        levelGain: Math.max(0, state.level - state.baselineLevelDaily),
+        goldEarned: state.dailyMissionStats.goldEarned,
+        goldSpent: state.dailyMissionStats.goldSpent,
+        diamondsEarned: state.dailyMissionStats.diamondsEarned,
+      };
+      const weeklyProgress = {
+        levelGain: Math.max(0, state.level - state.baselineLevelWeekly),
+        goldEarned: state.weeklyMissionStats.goldEarned,
+        goldSpent: state.weeklyMissionStats.goldSpent,
+        diamondsEarned: state.weeklyMissionStats.diamondsEarned,
+        gachaA: state.weeklyMissionStats.gachaA,
+        gachaS: state.weeklyMissionStats.gachaS,
+        gachaSS: state.weeklyMissionStats.gachaSS,
+        marketPurchases: state.weeklyMissionStats.marketPurchases,
+      };
+      const renderMissionList = (elId, missions, claimed, scope) => {
+        const wrap = document.getElementById(elId);
+        wrap.innerHTML = '';
+        missions.forEach(mission => {
+          const source = scope === 'daily' ? dailyProgress : weeklyProgress;
+          const progress = source[mission.type] || 0;
+          const done = claimed.includes(mission.id);
+          const percent = Math.min(100, progress / mission.target * 100);
+          const div = document.createElement('div');
+          div.className = 'list-item';
+          div.innerHTML = `<div class="row"><div><div style="font-weight:700;">${mission.label}</div><div class="muted">Thưởng: ${fmt(mission.reward)} điểm Lữ Khách</div></div>${done ? '<span class="pill">Đã nhận</span>' : progress >= mission.target ? '<button class="action">Nhận</button>' : `<span class="pill">${fmt(progress)}/${fmt(mission.target)}</span>`}</div><div class="progress" style="margin-top:10px;"><div style="width:${percent}%;"></div></div>`;
+          const btn = div.querySelector('button');
+          if (btn) btn.onclick = () => claimMission(mission, scope);
+          wrap.appendChild(div);
+        });
+      };
+      renderMissionList('dailyMissionList', travelerDailyMissions, state.dailyClaimed, 'daily');
+      renderMissionList('weeklyMissionList', travelerWeeklyMissions, state.weeklyClaimed, 'weekly');
+
+      const exchangeWrap = document.getElementById('travelerExchangeList');
+      exchangeWrap.innerHTML = '';
+      travelerExchangeRewards.forEach(reward => {
+        const div = document.createElement('div');
+        div.className = 'list-item row';
+        div.innerHTML = `<div><div style="font-weight:700;">${reward.label}</div><div class="muted">Giá đổi: ${fmt(reward.cost)} điểm</div></div><button class="action">Đổi</button>`;
+        div.querySelector('button').onclick = () => exchangeTravelerReward(reward);
+        exchangeWrap.appendChild(div);
+      });
+
+      const spinRewards = document.getElementById('travelerSpinRewardList');
+      spinRewards.innerHTML = '';
+      travelerSpinRewards.forEach(reward => {
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.innerHTML = `<div style="font-weight:700;">${reward.label}</div><div class="muted">Tỉ lệ: ${reward.weight}% tương đối</div>`;
+        spinRewards.appendChild(div);
+      });
+
+      const result = document.getElementById('spinResultBox');
+      if (state.travelerSpinResult) {
+        result.classList.remove('hidden');
+        result.innerHTML = `<b>Kết quả gần nhất:</b> ${state.travelerSpinResult}`;
+      } else result.classList.add('hidden');
+    }
+
+    function renderHeaven() {
+      const wrap = document.getElementById('angelExchangeList');
+      wrap.innerHTML = '';
+      angelExchangeRewards.forEach(reward => {
+        const div = document.createElement('div');
+        div.className = 'list-item row';
+        div.innerHTML = `<div><div style="font-weight:700;">${reward.label}</div><div class="muted">Giá đổi: ${fmt(reward.cost)} cánh thiên thần</div></div><button class="action">Đổi</button>`;
+        div.querySelector('button').onclick = () => exchangeAngelReward(reward);
+        wrap.appendChild(div);
+      });
+    }
+
+    function renderEncyclopedia() {
+      const wrap = document.getElementById('characterDexList');
+      wrap.innerHTML = '';
+      characters.forEach(unit => {
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.innerHTML = `<div class="unit-row">${characterChipHtml(unit)}<div class="unit-main"><div class="row"><div style="font-weight:700;">${unit.name}</div><span class="badge ${normalizeTierClass(unit.tier)}">${unit.tier}</span></div><div class="muted" style="margin-top:8px;">Lực chiến gốc: <b>${fmt(unit.power)}</b></div></div></div>`;
+        wrap.appendChild(div);
+      });
+    }
+
+    function renderSidebar() {
+      document.getElementById('powerText').textContent = fmt(getCurrentCharacterPower());
+      document.getElementById('currentCharacterNameText').textContent = getCurrentCharacterName();
+      const logs = document.getElementById('logList');
+      logs.innerHTML = '';
+      state.logs.forEach(log => {
+        const div = document.createElement('div');
+        div.className = 'log-item';
+        div.textContent = log;
+        logs.appendChild(div);
+      });
+    }
+
+    function render() {
+      try {
+        updateTimers();
+        renderTop();
+        renderChapters();
+        renderGacha();
+        renderCharacters();
+        renderShop();
+        renderTraveler();
+        renderHeaven();
+        renderEncyclopedia();
+        renderSidebar();
+      } catch (error) {
+        console.error('Render error:', error);
+        const logList = document.getElementById('logList');
+        if (logList) {
+          logList.innerHTML = `<div class="log-item">Lỗi giao diện: ${error.message}</div>`;
+        }
+      }
+    }
+
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => selectTab(btn.dataset.tab)));
+    document.getElementById('exploreBtn').onclick = doExplore;
+    document.getElementById('fightBtn').onclick = fightMonster;
+    document.getElementById('gacha1Btn').onclick = () => doGacha(1);
+    document.getElementById('gacha10Btn').onclick = () => doGacha(10);
+    document.getElementById('giftcodeBtn').onclick = redeemGiftcode;
+    document.getElementById('spin1Btn').onclick = () => spinTraveler(1);
+    document.getElementById('spin6Btn').onclick = () => spinTraveler(6);
+
+    setInterval(render, 1000);
+    render();
+  </script>
+</body>
+</html>
+      gap: 16px;
+    }
+    .hero { grid-template-columns: 1.2fr 1fr; margin-bottom: 20px; }
+    .layout { grid-template-columns: 1.45fr 0.85fr; gap: 20px; }
+    .shop-layout { grid-template-columns: 1fr 1fr; gap: 14px; }
+    .stats-grid, .mini-grid, .grid-5, .grid-4, .grid-3, .grid-2, .unit-grid {
+      display: grid;
+      gap: 12px;
+    }
+    .stats-grid { grid-template-columns: repeat(6, 1fr); }
+    .mini-grid { grid-template-columns: repeat(6, 1fr); margin-top: 14px; }
+    .grid-5 { grid-template-columns: repeat(5, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-2, .unit-grid { grid-template-columns: repeat(2, 1fr); }
+    .stat, .mini {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+      background: #f8fafc;
+    }
+    .stat .label, .mini .label, .muted { color: var(--muted); font-size: 12px; }
+    .stat .value { font-size: 24px; font-weight: 800; margin-top: 4px; }
+    .mini .value { font-size: 15px; font-weight: 700; margin-top: 2px; }
+    .progress {
+      height: 12px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      overflow: hidden;
+      margin-top: 14px;
+    }
+    .progress > div {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #0f172a, #f59e0b);
+      transition: width .2s;
+    }
+    .tabs, .subtabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .tab-btn, .subtab-btn {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 14px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .tab-btn.active, .subtab-btn.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .chapter-btn {
+      text-align: left;
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 16px;
+      padding: 14px;
+      cursor: pointer;
+    }
+    .chapter-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+    .chapter-btn.locked { opacity: .5; cursor: not-allowed; }
+    .row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .stack { display: flex; flex-direction: column; gap: 12px; }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #e2e8f0;
+    }
+    .badge.b { background:#dbeafe; color:#1d4ed8; }
+    .badge.a { background:#dcfce7; color:#15803d; }
+    .badge.s { background:#fef3c7; color:#b45309; }
+    .badge.ss { background:#ede9fe; color:#6d28d9; }
+    .badge.sss { background:#fee2e2; color:#b91c1c; }
+    button.action {
+      border: none;
+      background: var(--accent);
+      color: white;
+      border-radius: 14px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    button.action.secondary { background: #334155; }
+    button.action.light { background: white; color: var(--text); border: 1px solid var(--line); }
+    button.action.good { background: var(--good); }
+    button.action:disabled { opacity: .55; cursor: not-allowed; }
+    .list-item {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+      background: white;
+    }
+    .log-list { display: flex; flex-direction: column; gap: 10px; }
+    .log-item {
+      background: #f8fafc;
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-size: 13px;
+      border: 1px solid var(--line);
+    }
+    .highlight {
+      background: linear-gradient(90deg, #fef3c7, #fff7ed);
+      border: 1px solid #fcd34d;
+    }
+    .hidden { display: none !important; }
+    .unit-chip {
+      width: 58px;
+      height: 58px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      font-weight: 900;
+      color: white;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 10px 18px rgba(15,23,42,.12);
+      border: 1px solid rgba(15,23,42,.08);
+      flex: 0 0 58px;
+    }
+    .unit-chip.large { width: 76px; height: 76px; border-radius: 22px; font-size: 28px; }
+    .unit-chip.b { background: linear-gradient(135deg, #60a5fa, #2563eb); }
+    .unit-chip.a { background: linear-gradient(135deg, #4ade80, #15803d); }
+    .unit-chip.s { background: linear-gradient(135deg, #fbbf24, #d97706); }
+    .unit-chip.ss { background: linear-gradient(135deg, #a78bfa, #7c3aed); }
+    .unit-chip.sss { background: linear-gradient(135deg, #fb7185, #be123c); }
+    .unit-row { display:flex; gap:12px; align-items:center; }
+    .unit-main { flex:1; min-width:0; }
+    .unit-card.locked { opacity:.52; }
+    .pill { display:inline-block; padding:5px 10px; border-radius:999px; background:#f1f5f9; font-size:12px; font-weight:700; }
+    input.textbox {
+      flex: 1;
+      min-width: 220px;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      font: inherit;
+    }
+    @media (max-width: 1100px) {
+      .hero, .layout, .shop-layout { grid-template-columns: 1fr; }
+      .stats-grid, .mini-grid, .grid-5, .grid-4, .grid-3, .grid-2, .unit-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 700px) {
+      .stats-grid, .mini-grid, .grid-5, .grid-4, .grid-3, .grid-2, .unit-grid { grid-template-columns: 1fr; }
+      .tabs, .subtabs { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <div class="card">
+        <div class="card-body">
+          <div style="font-size:32px;font-weight:900;">Game Gacha Nhân Vật</div>
+          <div class="muted" style="margin-top:8px;">Đại tu từ hệ trái ác quỷ sang hệ nhân vật. Giữ lại các tài nguyên chính và sự kiện đang có.</div>
+          <div class="mini-grid">
+            <div class="mini"><div class="label">EXP người chơi</div><div class="value" id="xpText"></div></div>
+            <div class="mini"><div class="label">Kim cương</div><div class="value" id="diamondHeaderText"></div></div>
+            <div class="mini"><div class="label">Điểm Lữ Khách</div><div class="value" id="travelerPointHeaderText"></div></div>
+            <div class="mini"><div class="label">Cánh thiên thần</div><div class="value" id="angelWingHeaderText"></div></div>
+            <div class="mini"><div class="label">Thẻ nâng cấp thường</div><div class="value" id="normalUpgradeText"></div></div>
+            <div class="mini"><div class="label">Thẻ nâng cấp siêu cấp</div><div class="value" id="superUpgradeText"></div></div>
+          </div>
+          <div class="progress"><div id="xpBar"></div></div>
+          <div class="muted" style="margin-top:10px;">Hệ lưu dữ liệu vẫn dùng localStorage như trước. Tài nguyên cũ sẽ được giữ lại nếu có thể.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="stats-grid">
+            <div class="stat"><div class="label">Vàng</div><div class="value" id="goldText"></div></div>
+            <div class="stat"><div class="label">Kim cương</div><div class="value" id="diamondText"></div></div>
+            <div class="stat"><div class="label">Level</div><div class="value" id="levelText"></div></div>
+            <div class="stat"><div class="label">Tiền đ</div><div class="value" id="moneyDText"></div></div>
+            <div class="stat"><div class="label">Thẻ đột phá</div><div class="value" id="breakthroughText"></div></div>
+            <div class="stat"><div class="label">Nhân vật sở hữu</div><div class="value" id="collectionText"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="layout">
+      <div>
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="explore">Thám hiểm</button>
+          <button class="tab-btn" data-tab="gacha">Gacha</button>
+          <button class="tab-btn" data-tab="characters">Nhân vật</button>
+          <button class="tab-btn" data-tab="shop">Shop</button>
+          <button class="tab-btn" data-tab="traveler">Lữ Khách</button>
+          <button class="tab-btn" data-tab="heaven">Thiên Đàng</button>
+          <button class="tab-btn" data-tab="encyclopedia">Danh sách</button>
+        </div>
+
+        <div id="tab-explore" class="tab-panel active">
+          <div class="card">
+            <div class="card-header">Thám hiểm & Boss</div>
+            <div class="card-body stack">
+              <div class="grid-5" id="chapterList"></div>
+              <div class="list-item" id="chapterInfo"></div>
+              <div class="progress hidden" id="exploreProgressWrap"><div id="exploreProgressBar"></div></div>
+              <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                <button class="action" id="exploreBtn">Bắt đầu thám hiểm</button>
+                <button class="action secondary" id="fightBtn">Đánh quái kiếm vàng</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-gacha" class="tab-panel">
+          <div class="card">
+            <div class="card-header">Gacha nhân vật</div>
+            <div class="card-body stack">
+              <div class="grid-4">
+                <div class="mini"><div class="label">1 lần</div><div class="value">200 💎</div></div>
+                <div class="mini"><div class="label">10 lần</div><div class="value">1500 💎</div></div>
+                <div class="mini"><div class="label">Lượt còn lại</div><div class="value" id="gachaUsesText"></div></div>
+                <div class="mini"><div class="label">Làm mới</div><div class="value" id="gachaResetText"></div></div>
+              </div>
+              <div class="grid-5" id="rateList"></div>
+              <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                <button class="action" id="gacha1Btn">Gacha 1 lần</button>
+                <button class="action secondary" id="gacha10Btn">Gacha 10 lần</button>
+              </div>
+              <div class="list-item">
+                <div style="font-weight:700;">Giftcode</div>
+                <div class="muted" style="margin-top:6px;">Nhập mã quà để nhận tài nguyên hoặc nhân vật. Mỗi mã chỉ dùng 1 lần.</div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+                  <input id="giftcodeInput" class="textbox" placeholder="Nhập giftcode" />
+                  <button class="action" id="giftcodeBtn">Nhập mã</button>
+                </div>
+              </div>
+              <div id="gachaResultBox" class="hidden"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-characters" class="tab-panel">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">Nhân vật đang dùng</div>
+              <div class="card-body" id="currentCharacterBox"></div>
+            </div>
+            <div class="card">
+              <div class="card-header">Kho nhân vật</div>
+              <div class="card-body stack" id="ownedCharacterList"></div>
+            </div>
+          </div>
+          <div class="card" style="margin-top:16px;">
+            <div class="card-header">Bộ sưu tập chưa có</div>
+            <div class="card-body"><div class="unit-grid" id="missingCharacterList"></div></div>
+          </div>
+        </div>
+
+        <div id="tab-shop" class="tab-panel">
+          <div class="card">
+            <div class="card-header">Shop vật phẩm</div>
+            <div class="card-body">
+              <div class="muted" style="margin-bottom:12px;">Đã xoá shop trái cũ, chợ và gamepass. Shop giờ chỉ còn vật phẩm nâng cấp cho nhân vật.</div>
+              <div class="shop-layout">
+                <div class="card">
+                  <div class="card-header">Mua vật phẩm nâng cấp</div>
+                  <div class="card-body stack" id="upgradeShopList"></div>
+                </div>
+                <div class="card">
+                  <div class="card-header">Hướng dẫn nâng cấp</div>
+                  <div class="card-body stack muted">
+                    <div>- Thẻ nâng cấp thường: dùng để tăng cấp nhân vật.</div>
+                    <div>- Thẻ nâng cấp siêu cấp: tăng cấp hiệu quả hơn cho nhân vật bậc cao.</div>
+                    <div>- Thẻ đột phá: mở giới hạn cấp mới cho nhân vật mạnh.</div>
+                    <div>- Nâng cấp thực hiện ở tab Nhân vật.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-traveler" class="tab-panel">
+          <div class="stack">
+            <div class="card">
+              <div class="card-header">Sự kiện: Lữ Khách Tham Gia</div>
+              <div class="card-body">
+                <div class="grid-3">
+                  <div class="mini"><div class="label">Điểm Lữ Khách</div><div class="value" id="travelerPointMini"></div></div>
+                  <div class="mini"><div class="label">Thẻ Lữ Khách</div><div class="value" id="travelerTicketMini"></div></div>
+                  <div class="mini"><div class="label">Gacha mới</div><div class="value">Nhân vật</div></div>
+                </div>
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="card"><div class="card-header">Nhiệm vụ ngày</div><div class="card-body stack" id="dailyMissionList"></div></div>
+              <div class="card"><div class="card-header">Nhiệm vụ tuần</div><div class="card-body stack" id="weeklyMissionList"></div></div>
+            </div>
+            <div class="grid-2">
+              <div class="card"><div class="card-header">Đổi điểm Lữ Khách</div><div class="card-body stack" id="travelerExchangeList"></div></div>
+              <div class="card">
+                <div class="card-header">Vòng quay Lữ Khách</div>
+                <div class="card-body stack">
+                  <div class="muted">1 thẻ / 1 lần · 5 thẻ / 5 lần + 1 lần miễn phí</div>
+                  <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                    <button class="action" id="spin1Btn">Quay 1 lần</button>
+                    <button class="action secondary" id="spin6Btn">Quay 5 + 1</button>
+                  </div>
+                  <div id="spinResultBox" class="list-item hidden"></div>
+                  <div class="grid-2" id="travelerSpinRewardList"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-heaven" class="tab-panel">
+          <div class="stack">
+            <div class="card">
+              <div class="card-header">Sự kiện mới: Sức mạnh của Thiên Đàng</div>
+              <div class="card-body">
+                <div class="grid-4">
+                  <div class="mini"><div class="label">Cánh thiên thần</div><div class="value" id="angelWingTextMini"></div></div>
+                  <div class="mini"><div class="label">Tỉ lệ nhận thêm</div><div class="value">30%</div></div>
+                  <div class="mini"><div class="label">Nguồn nhận</div><div class="value">Thám hiểm / Đánh quái / Nhiệm vụ</div></div>
+                  <div class="mini"><div class="label">Shop đổi</div><div class="value">Buff / vật phẩm</div></div>
+                </div>
+                <div class="list-item" style="margin-top:12px;">
+                  <div style="font-weight:700;">Bảng tỉ lệ thưởng cánh thiên thần</div>
+                  <div class="muted" style="margin-top:8px;">80%: 50 cánh • 15%: 150 cánh • 3%: 1000 cánh • 2%: 2000 cánh</div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header">Shop Quỷ Đổi</div>
+              <div class="card-body stack" id="angelExchangeList"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-encyclopedia" class="tab-panel">
+          <div class="card">
+            <div class="card-header">Danh sách nhân vật</div>
+            <div class="card-body"><div class="unit-grid" id="characterDexList"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stack">
+        <div class="card">
+          <div class="card-header">Đội hình hiện tại</div>
+          <div class="card-body">
+            <div class="list-item">
+              <div class="label muted">Lực chiến hiện tại</div>
+              <div style="font-size:40px;font-weight:900;margin-top:4px;" id="powerText"></div>
+              <div class="muted" style="margin-top:10px;">Nhân vật đang dùng: <b id="currentCharacterNameText"></b></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">Nhật ký hoạt động</div>
+          <div class="card-body"><div class="log-list" id="logList"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header">Ghi chú luật mới</div>
+          <div class="card-body stack muted">
+            <div>- Đã xoá toàn bộ hệ trái ác quỷ cũ, thay bằng hệ nhân vật.</div>
+            <div>- Gacha mới dùng kim cương: 200/1 lần, 1500/10 lần, áp dụng mọi level.</div>
+            <div>- Đã xoá thẻ siêu may mắn và vé awakening cũ.</div>
+            <div>- Vật phẩm mới: thẻ nâng cấp thường, thẻ nâng cấp siêu cấp, thẻ đột phá.</div>
+            <div>- Tab Túi đồ đổi thành tab Nhân vật, có thể xem đã có/chưa có và nâng cấp cấp nhân vật.</div>
+            <div>- Shop giữ lại làm nơi mua vật phẩm nâng cấp, không còn bán nhân vật hay gamepass.</div>
+            <div>- Giữ lại thám hiểm, boss, Lữ Khách, Thiên Đàng, tiền đ và giftcode.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SAVE_KEY = 'devil-fruit-game-html-save-v1';
+    const MAX_LEVEL = 1000;
+    const SHOP_RESET_INTERVAL_MS = 60 * 60 * 1000;
+    const TRAVELER_DISCOUNT_INTERVAL_MS = 30 * 60 * 1000;
+    const DAILY_RESET_INTERVAL_MS = 24 * 60 * 60 * 1000;
+    const WEEKLY_RESET_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
+    const MONSTER_FIGHT_COOLDOWN_MS = 5 * 60 * 1000;
+    const CHAPTER_MISSION_COOLDOWN_MS = 1 * 60 * 1000;
+    const BOSS_RESPAWN_MS = 20 * 60 * 1000;
+    const BOSS_FIGHT_DURATION_MS = 5 * 60 * 1000;
+    const GACHA_WINDOW_MS = 30 * 60 * 1000;
+    const GACHA_USES_PER_WINDOW = 10;
+    const GACHA_COST_ONE = 200;
+    const GACHA_COST_TEN = 1500;
+
+    const tierInfo = {
+      B: { label: 'B', className: 'b', rate: 46 },
+      A: { label: 'A', className: 'a', rate: 28 },
+      S: { label: 'S', className: 's', rate: 16 },
+      SS: { label: 'SS', className: 'ss', rate: 8 },
+      SSS: { label: 'SSS', className: 'sss', rate: 2 },
+    };
+
+    const characters = [
+      { id:'bulma', name:'Bulma', tier:'B', power:11000 },
+      { id:'chichi', name:'Chi-chi', tier:'B', power:11300 },
+      { id:'videl', name:'Videl', tier:'B', power:12300 },
+      { id:'krillin_normal', name:'Krillin (normal)', tier:'B', power:13400 },
+      { id:'yamcha_normal', name:'Yamcha (normal)', tier:'B', power:13800 },
+      { id:'chiaotzu', name:'Chiaotzu', tier:'A', power:20400 },
+      { id:'taopaipai', name:'Tao Pai Pai', tier:'A', power:20400 },
+      { id:'master_roshi_normal', name:'Master Roshi (normal)', tier:'A', power:20500 },
+      { id:'tenshinhan', name:'Tenshinhan', tier:'A', power:20800 },
+      { id:'krillin', name:'Krillin', tier:'A', power:21000 },
+      { id:'yamcha', name:'Yamcha', tier:'A', power:23000 },
+      { id:'picolo_normal', name:'Picolo (normal)', tier:'A', power:25000 },
+      { id:'vegeta_saga_saiyan', name:'Vegeta saga Saiyan', tier:'A', power:30000 },
+      { id:'cui', name:'Cui', tier:'A', power:28000 },
+      { id:'dodoria', name:'Dodoria', tier:'A', power:28000 },
+      { id:'bardock', name:'Bardock', tier:'A', power:29000 },
+      { id:'goku_normal', name:'Goku (normal)', tier:'S', power:55000 },
+      { id:'vegeta_normal', name:'Vegeta (normal)', tier:'S', power:55000 },
+      { id:'cell_original', name:'Cell (original)', tier:'S', power:61000 },
+      { id:'android20', name:'Android 20', tier:'S', power:59000 },
+      { id:'android19', name:'Android 19', tier:'S', power:58000 },
+      { id:'android18', name:'Android 18', tier:'S', power:60000 },
+      { id:'android17', name:'Android 17', tier:'S', power:60000 },
+      { id:'android16', name:'Android 16', tier:'S', power:55000 },
+      { id:'vegeta_ss', name:'Vegeta (SS)', tier:'S', power:63000 },
+      { id:'goku_ss', name:'Goku (SS)', tier:'S', power:63000 },
+      { id:'babidi', name:'Babidi', tier:'SS', power:112000 },
+      { id:'kibito', name:'Kibito', tier:'SS', power:115000 },
+      { id:'dabura', name:'Dabura', tier:'SS', power:114000 },
+      { id:'cell', name:'Cell', tier:'SS', power:118000 },
+      { id:'black_goku', name:'Black Son Goku', tier:'SS', power:121000 },
+      { id:'trunks_miracle', name:'Trunks (Miracle)', tier:'SS', power:122000 },
+      { id:'majin_buu_kid', name:'Majin Buu (Kid)', tier:'SS', power:118000 },
+      { id:'gotenks_ss', name:'Gotenks (SS)', tier:'SS', power:118000 },
+      { id:'gohan_ss', name:'Gohan (super Saiyan)', tier:'SS', power:117000 },
+      { id:'gohan_ss2', name:'Gohan (SS2)', tier:'SS', power:119000 },
+      { id:'vegeta_majin', name:'Vegeta (Majin)', tier:'SS', power:120000 },
+      { id:'vegeta_ss2', name:'Vegeta (SS2)', tier:'SS', power:120000 },
+      { id:'goku_ss2', name:'Goku (SS2)', tier:'SS', power:120000 },
+      { id:'tagoma', name:'Tagoma', tier:'SS', power:117000 },
+      { id:'sorbet', name:'Sorbet', tier:'SS', power:115000 },
+      { id:'jaco', name:'Jaco', tier:'SS', power:117000 },
+      { id:'kame_sennin_super', name:'Kame Sennin (super)', tier:'SS', power:123000 },
+      { id:'tien_super', name:'Tien (super)', tier:'SS', power:122000 },
+      { id:'kahseral', name:'Kahseral', tier:'SS', power:125000 },
+      { id:'bardock_ss', name:'Bardock (SS)', tier:'SS', power:120000 },
+      { id:'roasie', name:'Roasie', tier:'SS', power:118000 },
+      { id:'baby_vegeta_ss', name:'Baby Vegeta (SS)', tier:'SS', power:125000 },
+      { id:'krillin_super', name:'Krillin (super)', tier:'SS', power:121000 },
+      { id:'uub', name:'Uub', tier:'SS', power:121000 },
+      { id:'videl_sp', name:'Videl (sp)', tier:'SS', power:114000 },
+      { id:'majin_buu_fat', name:'Majin Buu (Fat)', tier:'SSS', power:325000 },
+      { id:'gotenks_ss3', name:'Gotenks (SS3)', tier:'SSS', power:313000 },
+      { id:'majin_buu_evil', name:'Majin Buu (Evil)', tier:'SSS', power:325000 },
+      { id:'goku_ss3', name:'Goku (SS3)', tier:'SSS', power:330000 },
+      { id:'gohan_adult', name:'Gohan (Adult)', tier:'SSS', power:330000 },
+      { id:'vegito_ss', name:'Vegito (SS)', tier:'SSS', power:328000 },
+      { id:'goku_ssgod', name:'Goku (SSGod)', tier:'SSS', power:335000 },
+      { id:'whis', name:'Whis', tier:'SSS', power:325000 },
+      { id:'beerus', name:'Beerus', tier:'SSS', power:330000 },
+      { id:'broly', name:'Broly', tier:'SSS', power:340000 },
+      { id:'vegeta_blue', name:'Vegeta (SSGSS) (blue)', tier:'SSS', power:335000 },
+      { id:'goku_blue', name:'Goku (SSGSS) (blue)', tier:'SSS', power:335000 },
+      { id:'goku_ss4', name:'Goku (SS4)', tier:'SSS', power:335000 },
+      { id:'frieza_golden', name:'Frieza (Golden)', tier:'SSS', power:335000 },
+      { id:'vegeta_ssg', name:'Vegeta (SSG)', tier:'SSS', power:330000 },
+      { id:'vados', name:'Vados', tier:'SSS', power:325000 },
+      { id:'champa', name:'Champa', tier:'SSS', power:330000 },
+      { id:'hit', name:'Hit', tier:'SSS', power:335000 },
+      { id:'black_goku_rose', name:'Black Son Goku (Rose)', tier:'SSS', power:340000 },
+    ];
+
+    const tierOrder = ['B','A','S','SS','SSS'];
+
+    const exploreChapters = [
+      { id: 1, name: 'Chương 1', minLevel: 1, maxLevel: 50, goldMin: 100, goldMax: 800, exp: 35, diamondChance: 0.25, diamondReward: 3, minSec: 112, maxSec: 225 },
+      { id: 2, name: 'Chương 2', minLevel: 51, maxLevel: 110, goldMin: 500, goldMax: 1500, exp: 135, diamondChance: 0.28, diamondReward: 5, minSec: 125, maxSec: 262 },
+      { id: 3, name: 'Chương 3', minLevel: 111, maxLevel: 190, goldMin: 800, goldMax: 1650, exp: 330, diamondChance: 0.33, diamondReward: 8, minSec: 145, maxSec: 300 },
+      { id: 4, name: 'Chương 4', minLevel: 191, maxLevel: 250, goldMin: 1000, goldMax: 1800, exp: 460, diamondChance: 0.37, diamondReward: 10, minSec: 162, maxSec: 337 },
+      { id: 5, name: 'Chương 5', minLevel: 251, maxLevel: 310, goldMin: 1200, goldMax: 1900, exp: 570, diamondChance: 0.38, diamondReward: 11, minSec: 187, maxSec: 375 },
+      { id: 6, name: 'Chương 6', minLevel: 311, maxLevel: 380, goldMin: 1350, goldMax: 2100, exp: 700, diamondChance: 0.39, diamondReward: 14, minSec: 205, maxSec: 412 },
+      { id: 7, name: 'Chương 7', minLevel: 381, maxLevel: 450, goldMin: 1500, goldMax: 2200, exp: 810, diamondChance: 0.40, diamondReward: 15, minSec: 225, maxSec: 450 },
+      { id: 8, name: 'Chương 8', minLevel: 451, maxLevel: 600, goldMin: 1800, goldMax: 2500, exp: 1160, diamondChance: 0.42, diamondReward: 17, minSec: 250, maxSec: 487 },
+      { id: 9, name: 'Chương 9', minLevel: 601, maxLevel: 800, goldMin: 2000, goldMax: 2700, exp: 1620, diamondChance: 0.45, diamondReward: 20, minSec: 275, maxSec: 525 },
+      { id: 10, name: 'Chương 10', minLevel: 801, maxLevel: 1000, goldMin: 2200, goldMax: 3000, exp: 2020, diamondChance: 0.45, diamondReward: 21, minSec: 300, maxSec: 562 },
+    ];
+
+    const upgradeShopItems = [
+      { id:'normal_upgrade', name:'Thẻ nâng cấp thường', currency:'gold', price:25000, rewardKey:'normalUpgradeCards', amount:1 },
+      { id:'normal_upgrade_5', name:'5 thẻ nâng cấp thường', currency:'gold', price:115000, rewardKey:'normalUpgradeCards', amount:5 },
+      { id:'super_upgrade', name:'Thẻ nâng cấp siêu cấp', currency:'diamonds', price:150, rewardKey:'superUpgradeCards', amount:1 },
+      { id:'super_upgrade_5', name:'5 thẻ nâng cấp siêu cấp', currency:'diamonds', price:700, rewardKey:'superUpgradeCards', amount:5 },
+      { id:'breakthrough', name:'Thẻ đột phá', currency:'diamonds', price:500, rewardKey:'breakthroughCards', amount:1 },
+      { id:'breakthrough_3', name:'3 thẻ đột phá', currency:'diamonds', price:1400, rewardKey:'breakthroughCards', amount:3 },
+    ];
+
+    const travelerDailyMissions = [
+      { id: 'd_lv_50', label: 'Tăng thêm 50 Lv', type: 'levelGain', target: 50, reward: 100 },
+      { id: 'd_lv_70', label: 'Tăng thêm 70 Lv', type: 'levelGain', target: 70, reward: 120 },
+      { id: 'd_lv_90', label: 'Tăng thêm 90 Lv', type: 'levelGain', target: 90, reward: 150 },
+      { id: 'd_lv_100', label: 'Tăng thêm 100 Lv', type: 'levelGain', target: 100, reward: 250 },
+      { id: 'd_spend_20000', label: 'Tiêu 20.000 vàng', type: 'goldSpent', target: 20000, reward: 100 },
+      { id: 'd_gain_1500', label: 'Nhận 1.500 vàng', type: 'goldEarned', target: 1500, reward: 200 },
+      { id: 'd_gain_5000', label: 'Nhận 5.000 vàng', type: 'goldEarned', target: 5000, reward: 250 },
+      { id: 'd_dia_5', label: 'Nhận 5 kim cương', type: 'diamondsEarned', target: 5, reward: 100 },
+      { id: 'd_dia_20', label: 'Nhận 20 kim cương', type: 'diamondsEarned', target: 20, reward: 400 },
+    ];
+
+    const travelerWeeklyMissions = [
+      { id: 'w_lv_500', label: 'Tăng thêm 500 Lv', type: 'levelGain', target: 500, reward: 1000 },
+      { id: 'w_lv_700', label: 'Tăng thêm 700 Lv', type: 'levelGain', target: 700, reward: 2000 },
+      { id: 'w_gold_30000', label: 'Nhận tổng 30.000 vàng', type: 'goldEarned', target: 30000, reward: 1300 },
+      { id: 'w_gold_50000', label: 'Nhận tổng 50.000 vàng', type: 'goldEarned', target: 50000, reward: 1500 },
+      { id: 'w_dia_100', label: 'Nhận tổng 100 kim cương', type: 'diamondsEarned', target: 100, reward: 2000 },
+      { id: 'w_dia_200', label: 'Nhận tổng 200 kim cương', type: 'diamondsEarned', target: 200, reward: 2000 },
+      { id: 'w_gacha_a_3', label: 'Gacha ra 3 nhân vật bậc A', type: 'gachaA', target: 3, reward: 1300 },
+      { id: 'w_gacha_a_5', label: 'Gacha ra 5 nhân vật bậc A', type: 'gachaA', target: 5, reward: 2400 },
+      { id: 'w_gacha_s_3', label: 'Gacha ra 3 nhân vật bậc S', type: 'gachaS', target: 3, reward: 2000 },
+      { id: 'w_gacha_s_5', label: 'Gacha ra 5 nhân vật bậc S', type: 'gachaS', target: 5, reward: 3500 },
+      { id: 'w_gacha_ss_1', label: 'Gacha ra 1 nhân vật bậc SS', type: 'gachaSS', target: 1, reward: 5000 },
+      { id: 'w_market_buy_3', label: 'Mua đồ trong shop 3 lần', type: 'marketPurchases', target: 3, reward: 500 },
+    ];
+
+    const travelerExchangeRewards = [
+      { id:'ex_dia_5', cost:400, label:'5 kim cương', kind:'diamonds', amount:5 },
+      { id:'ex_dia_13', cost:700, label:'13 kim cương', kind:'diamonds', amount:13 },
+      { id:'ex_ticket_1', cost:1300, label:'1 thẻ Lữ Khách', kind:'travelerTickets', amount:1 },
+      { id:'ex_ticket_2', cost:2500, label:'2 thẻ Lữ Khách', kind:'travelerTickets', amount:2 },
+      { id:'ex_ticket_5', cost:5500, label:'5 thẻ Lữ Khách', kind:'travelerTickets', amount:5 },
+      { id:'ex_super_upgrade', cost:15000, label:'10 thẻ nâng cấp siêu cấp', kind:'superUpgradeCards', amount:10 },
+      { id:'ex_breakthrough', cost:15000, label:'3 thẻ đột phá', kind:'breakthroughCards', amount:3 },
+      { id:'ex_angel_wings', cost:35000, label:'5000 cánh thiên thần', kind:'angelWings', amount:5000 },
+      { id:'ex_sss_box', cost:50000, label:'Rương nhân vật bậc SSS', kind:'randomCharacterTier', tier:'SSS', amount:1 },
+    ];
+
+    const angelExchangeRewards = [
+      { id:'angel_x2_10', cost:1000, label:'x2 EXP trong 10 phút', kind:'expBuff', multiplier:2, durationMs:10 * 60 * 1000 },
+      { id:'angel_x2_20', cost:1500, label:'x2 EXP trong 20 phút', kind:'expBuff', multiplier:2, durationMs:20 * 60 * 1000 },
+      { id:'angel_x3_10', cost:2000, label:'x3 EXP trong 10 phút', kind:'expBuff', multiplier:3, durationMs:10 * 60 * 1000 },
+      { id:'angel_super_upgrade', cost:30000, label:'25 thẻ nâng cấp siêu cấp', kind:'superUpgradeCards', amount:25 },
+    ];
+
+    const travelerSpinRewards = [
+      { id:'spin_dia_5', label:'5 kim cương', weight:22, kind:'diamonds', amount:5 },
+      { id:'spin_dia_8', label:'8 kim cương', weight:18, kind:'diamonds', amount:8 },
+      { id:'spin_dia_10', label:'10 kim cương', weight:14, kind:'diamonds', amount:10 },
+      { id:'spin_pts_500', label:'500 điểm Lữ Khách', weight:14, kind:'travelerPoints', amount:500 },
+      { id:'spin_pts_800', label:'800 điểm Lữ Khách', weight:10, kind:'travelerPoints', amount:800 },
+      { id:'spin_pts_1000', label:'1000 điểm Lữ Khách', weight:8, kind:'travelerPoints', amount:1000 },
+      { id:'spin_pts_1200', label:'1200 điểm Lữ Khách', weight:5, kind:'travelerPoints', amount:1200 },
+      { id:'spin_breakthrough', label:'1 thẻ đột phá', weight:2.5, kind:'breakthroughCards', amount:1 },
+      { id:'spin_super_upgrade', label:'3 thẻ nâng cấp siêu cấp', weight:4.5, kind:'superUpgradeCards', amount:3 },
+      { id:'spin_ss_character', label:'1 nhân vật bậc SS', weight:0.5, kind:'randomCharacterTier', tier:'SS', amount:1 },
+    ];
+
+    const chapterMissionTemplates = {
+      1: [
+        { id:'c1_easy', label:'Dọn bãi biển Chương 1', expMultiplier:1.5, goldBonus:120 },
+        { id:'c1_hard', label:'Săn quái nhỏ Chương 1', expMultiplier:1.8, goldBonus:180 },
+      ],
+      2: [
+        { id:'c2_easy', label:'Khảo sát khu rừng Chương 2', expMultiplier:1.6, goldBonus:180 },
+        { id:'c2_hard', label:'Phá ổ quái Chương 2', expMultiplier:1.9, goldBonus:260 },
+      ],
+      3: [
+        { id:'c3_easy', label:'Dò đường sa mạc Chương 3', expMultiplier:1.7, goldBonus:260 },
+        { id:'c3_hard', label:'Tiêu diệt canh gác Chương 3', expMultiplier:2.0, goldBonus:340 },
+      ],
+      4: [
+        { id:'c4_easy', label:'Dẹp trại giặc Chương 4', expMultiplier:1.8, goldBonus:320 },
+        { id:'c4_hard', label:'Đột kích pháo đài Chương 4', expMultiplier:2.1, goldBonus:420 },
+      ],
+      5: [
+        { id:'c5_easy', label:'Truy quét hải tặc Chương 5', expMultiplier:1.9, goldBonus:400 },
+        { id:'c5_hard', label:'Chiếm boong tàu Chương 5', expMultiplier:2.2, goldBonus:520 },
+      ],
+      6: [
+        { id:'c6_easy', label:'Tìm kho báu ẩn Chương 6', expMultiplier:2.0, goldBonus:500 },
+        { id:'c6_hard', label:'Dọn mê cung Chương 6', expMultiplier:2.3, goldBonus:650 },
+      ],
+      7: [
+        { id:'c7_easy', label:'Đánh tan đội tuần tra Chương 7', expMultiplier:2.1, goldBonus:620 },
+        { id:'c7_hard', label:'Hạ thủ lĩnh Chương 7', expMultiplier:2.4, goldBonus:760 },
+      ],
+      8: [
+        { id:'c8_easy', label:'Khám phá tàn tích Chương 8', expMultiplier:2.2, goldBonus:760 },
+        { id:'c8_hard', label:'Càn quét tinh anh Chương 8', expMultiplier:2.6, goldBonus:920 },
+      ],
+      9: [
+        { id:'c9_easy', label:'Đột phá chiến tuyến Chương 9', expMultiplier:2.4, goldBonus:900 },
+        { id:'c9_hard', label:'Săn boss phụ Chương 9', expMultiplier:2.8, goldBonus:1100 },
+      ],
+      10: [
+        { id:'c10_easy', label:'Thanh trừng pháo đài Chương 10', expMultiplier:2.6, goldBonus:1150 },
+        { id:'c10_hard', label:'Đối đầu tối thượng Chương 10', expMultiplier:3.0, goldBonus:1400 },
+      ],
+    };
+
+    function tierRank(tier) {
+      return tierOrder.indexOf(tier);
+    }
+
+    function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+    function chance(prob) { return Math.random() < prob; }
+    function weightedPick(weights) {
+      const total = weights.reduce((sum, item) => sum + item.weight, 0);
+      let cursor = Math.random() * total;
+      for (const item of weights) {
+        cursor -= item.weight;
+        if (cursor <= 0) return item.value;
+      }
+      return weights[weights.length - 1].value;
+    }
+    function fmt(n) { return Number(n || 0).toLocaleString('vi-VN'); }
+    function alignFutureTime(intervalMs, now = Date.now()) { return Math.floor(now / intervalMs) * intervalMs + intervalMs; }
+    function getHighestChapterForLevel(level) {
+      const unlocked = exploreChapters.filter(ch => level >= ch.minLevel);
+      return unlocked.length ? unlocked[unlocked.length - 1].id : 1;
+    }
+    function xpNeeded(level) {
+      if (level <= 40) return 18 + level * 4;
+      if (level <= 100) return 260 + (level - 40) * 24;
+      if (level <= 500) return 1700 + (level - 100) * 42;
+      return 18500 + (level - 500) * 65;
+    }
+    function getEffectiveUnlockedChapter() { return Math.max(1, getHighestChapterForLevel(state.level)); }
+    function normalizeTierClass(tier) { return String(tier || 'B').toLowerCase(); }
+    function characterEmoji(unit) {
+      const map = { B:'🟦', A:'🟩', S:'🟨', SS:'🟪', SSS:'🟥' };
+      return map[unit.tier] || '⚪';
+    }
+    function characterChipHtml(unit, size='small') {
+      return `<div class="unit-chip ${normalizeTierClass(unit.tier)}${size === 'large' ? ' large' : ''}">${characterEmoji(unit)}</div>`;
+    }
+
+    function createOwnedCharacter(characterId) {
+      return { id: characterId, charLevel: 1, breakthrough: 0, awakened: false, copies: 1 };
+    }
+
+    function getCharacterDef(characterId) {
+      return characters.find(item => item.id === characterId);
+    }
+
+    function getOwnedCharacter(characterId) {
+      return (state.ownedCharacters || []).find(item => item.id === characterId) || null;
+    }
+
+    function getCharacterMaxLevel(unit) {
+      return 20 + (unit.breakthrough || 0) * 20;
+    }
+
+    function getCharacterPower(unit) {
+      const def = getCharacterDef(unit.id);
+      if (!def) return 0;
+      const levelBonus = 1 + ((unit.charLevel || 1) - 1) * 0.04;
+      const breakthroughBonus = 1 + (unit.breakthrough || 0) * 0.18;
+      return Math.floor(def.power * levelBonus * breakthroughBonus);
+    }
+
+    function getCurrentCharacterPower() {
+      const current = getOwnedCharacter(state.currentCharacterId);
+      return current ? getCharacterPower(current) : 10;
+    }
+
+    function getCurrentCharacterName() {
+      const current = getOwnedCharacter(state.currentCharacterId);
+      if (!current) return 'Chưa chọn';
+      return getCharacterDef(current.id)?.name || 'Không rõ';
+    }
+
+    function getGachaRates() {
+      const total = tierOrder.reduce((sum, tier) => sum + tierInfo[tier].rate, 0);
+      const result = {};
+      tierOrder.forEach(tier => { result[tier] = tierInfo[tier].rate / total * 100; });
+      return result;
+    }
+
+    function pickCharacter() {
+      const chosenTier = weightedPick(tierOrder.map(tier => ({ value: tier, weight: tierInfo[tier].rate })));
+      const pool = characters.filter(item => item.tier === chosenTier);
+      return pool[randInt(0, pool.length - 1)];
+    }
+
+    function getExploreMoneyDReward(chapterId) {
+      const multiplier = 1 + (chapterId - 1) * 0.2;
+      return Math.floor(randInt(2000, 10000) * multiplier);
+    }
     function getFightMoneyDReward(chapterId) {
       const multiplier = 1 + (chapterId - 1) * 0.5;
       return Math.floor(randInt(2000, 30000) * multiplier);
