@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dragon Detective Gacha</title>
+  <meta name="description" content="Game sưu tầm nhân vật chạy tĩnh trên GitHub Pages" />
   <style>
     * { box-sizing: border-box; }
     body {
@@ -12,11 +13,7 @@
       background: linear-gradient(135deg, #e5e7eb, #d1d5db);
       color: #111827;
     }
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 20px;
-    }
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
     .grid { display: grid; gap: 20px; }
     .top-grid { grid-template-columns: 1.6fr 1fr; }
     .two-col { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -34,6 +31,1073 @@
       padding: 18px;
     }
     .mini-card {
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(107, 114, 128, 0.18);
+      border-radius: 18px;
+      padding: 14px;
+    }
+    .section-title { font-size: 20px; font-weight: 800; margin: 0 0 14px; color: #1f2937; }
+    .sub { color: #6b7280; font-size: 14px; }
+    .strong { font-weight: 800; margin-top: 6px; color: #111827; }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .actions, .hero-actions, .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tabs { margin-top: 20px; margin-bottom: 16px; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 700;
+      background: #4b5563;
+      color: #f9fafb;
+    }
+    button.secondary { background: #6b7280; }
+    button.danger { background: #b91c1c; }
+    button.outline { background: #f9fafb; color: #111827; border: 1px solid #d1d5db; }
+    button.active-tab { background: #374151; }
+    button:disabled { opacity: 0.65; cursor: not-allowed; }
+    input {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid #d1d5db;
+      padding: 10px 12px;
+      font-size: 14px;
+      background: #ffffff;
+      color: #111827;
+    }
+    .progress { width: 100%; height: 12px; background: #e5e7eb; border-radius: 999px; overflow: hidden; }
+    .progress-bar { height: 100%; background: linear-gradient(90deg, #9ca3af, #4b5563); width: 0%; }
+    .badge {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 6px 10px;
+      color: white;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .badge.B { background: #64748b; }
+    .badge.A { background: #10b981; }
+    .badge.S { background: #0ea5e9; }
+    .badge.SS { background: #d946ef; }
+    .badge.SSS { background: #f59e0b; }
+    .list-box { max-height: 320px; overflow: auto; display: grid; gap: 8px; }
+    .log-item, .rank-item { background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 14px; padding: 10px 12px; }
+    .spacer-8 { margin-top: 8px; }
+    .spacer-10 { margin-top: 10px; }
+    .spacer-12 { margin-top: 12px; }
+    .spacer-14 { margin-top: 14px; }
+    canvas {
+      width: 100%;
+      border-radius: 20px;
+      border: 1px solid rgba(107, 114, 128, 0.2);
+      background: rgba(17, 24, 39, 0.08);
+      display: block;
+    }
+    @media (max-width: 1024px) {
+      .top-grid, .two-col, .inner-grid-2 { grid-template-columns: 1fr; }
+      .gift-single { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="grid top-grid">
+      <div class="card">
+        <canvas id="gameCanvas" width="920" height="240"></canvas>
+        <div id="notice" class="sub spacer-12">Chào mừng đến game sưu tầm nhân vật.</div>
+      </div>
+      <div class="stats-grid" id="statsGrid"></div>
+    </div>
+
+    <div class="card spacer-14">
+      <div class="row">
+        <div>
+          <div class="section-title">Tài khoản</div>
+          <div class="sub">Dữ liệu được lưu bằng localStorage, reload không mất đồ.</div>
+          <div id="buffInfo" class="sub spacer-8" style="font-weight:700;"></div>
+        </div>
+        <div class="actions">
+          <button class="outline" id="openSsChestBtn">Mở hòm SS</button>
+          <button class="danger" id="resetSaveBtn">Reset save</button>
+        </div>
+      </div>
+      <div class="account-grid" id="accountInfo"></div>
+    </div>
+
+    <div class="tabs" id="tabsBar"></div>
+
+    <div id="tab-detective" class="tab-panel active"></div>
+    <div id="tab-gacha" class="tab-panel"></div>
+    <div id="tab-heroes" class="tab-panel"></div>
+    <div id="tab-support" class="tab-panel"></div>
+    <div id="tab-arena" class="tab-panel"></div>
+    <div id="tab-gift" class="tab-panel"></div>
+
+    <div class="card spacer-14">
+      <div class="section-title">Kiểm tra nhanh</div>
+      <div class="list-box" id="quickChecks"></div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "dragon-collect-game-react-v2";
+    const HOUR = 60 * 60 * 1000;
+    const MIN20 = 20 * 60 * 1000;
+
+    const heroes = {
+      B: [
+        { name: "Bulma", power: 11000 },
+        { name: "Chi-chi", power: 11300 },
+        { name: "Videl", power: 12300 },
+        { name: "Krillin (normal)", power: 13400 },
+        { name: "Yamcha (normal)", power: 13800 },
+      ],
+      A: [
+        { name: "Chiaotzu", power: 20400 },
+        { name: "Tao Pai Pai", power: 20400 },
+        { name: "Master Roshi (normal)", power: 20500 },
+        { name: "Tenshinhan", power: 20800 },
+        { name: "Krillin", power: 21000 },
+        { name: "Yamcha", power: 23000 },
+        { name: "Picolo (normal)", power: 25000 },
+        { name: "Vegeta saga Saiyan", power: 30000 },
+        { name: "Cui", power: 28000 },
+        { name: "Dodoria", power: 28000 },
+        { name: "Bardock", power: 29000 },
+      ],
+      S: [
+        { name: "Goku (normal)", power: 55000 },
+        { name: "Vegeta (normal)", power: 55000 },
+        { name: "Cell (original)", power: 61000 },
+        { name: "Android 20", power: 59000 },
+        { name: "Android 19", power: 58000 },
+        { name: "Android 18", power: 60000 },
+        { name: "Android 17", power: 60000 },
+        { name: "Android 16", power: 55000 },
+        { name: "Vegeta (SS)", power: 63000 },
+        { name: "Goku (SS)", power: 63000 },
+      ],
+      SS: [
+        { name: "Babidi", power: 112000 }, { name: "Kibito", power: 115000 }, { name: "Dabura", power: 114000 },
+        { name: "Cell", power: 118000 }, { name: "Black Son Goku", power: 121000 }, { name: "Trunks (Miracle)", power: 122000 },
+        { name: "Majin Buu (Kid)", power: 118000 }, { name: "Gotenks (SS)", power: 118000 }, { name: "Gohan (super Saiyan)", power: 117000 },
+        { name: "Gohan (SS2)", power: 119000 }, { name: "Vegeta (Majin)", power: 120000 }, { name: "Vegeta (SS2)", power: 120000 },
+        { name: "Goku (SS2)", power: 120000 }, { name: "Tagoma", power: 117000 }, { name: "Sorbet", power: 115000 },
+        { name: "Jaco", power: 117000 }, { name: "Kame Sennin (super)", power: 123000 }, { name: "Tien (super)", power: 122000 },
+        { name: "Kahseral", power: 125000 }, { name: "Bardock (SS)", power: 120000 }, { name: "Roasie", power: 118000 },
+        { name: "Baby Vegeta (SS)", power: 125000 }, { name: "Krillin (super)", power: 121000 }, { name: "Uub", power: 121000 }, { name: "Videl (sp)", power: 114000 },
+      ],
+      SSS: [
+        { name: "Majin Buu (Fat)", power: 325000 }, { name: "Gotenks (SS3)", power: 313000 }, { name: "Majin Buu (Evil)", power: 325000 },
+        { name: "Goku (SS3)", power: 330000 }, { name: "Gohan (Adult)", power: 330000 }, { name: "Vegito (SS)", power: 328000 },
+        { name: "Goku (SSGod)", power: 335000 }, { name: "Whis", power: 325000 }, { name: "Beerus", power: 330000 },
+        { name: "Broly", power: 340000 }, { name: "Vegeta (SSGSS) (blue)", power: 335000 }, { name: "Goku (SSGSS) (blue)", power: 335000 },
+        { name: "Goku (SS4)", power: 335000 }, { name: "Frieza (Golden)", power: 335000 }, { name: "Vegeta (SSG)", power: 330000 },
+        { name: "Vados", power: 325000 }, { name: "Champa", power: 330000 }, { name: "Hit", power: 335000 }, { name: "Black Son Goku (Rose)", power: 340000 },
+      ],
+    };
+
+    const rarityRate = [
+      { rank: "B", rate: 0.50 },
+      { rank: "A", rate: 0.33 },
+      { rank: "S", rate: 0.15 },
+      { rank: "SS", rate: 0.02 },
+    ];
+
+    const heroMaxLvByRank = { B: 60, A: 120, S: 200, SS: 360, SSS: 360 };
+    const chapters = [
+      { id: 1, name: "Chương 1", minLv: 1, maxLv: 40, seconds: 5, gold: [100, 500], exp: [18, 32], diamondChance: 0.3, diamondAmount: 20, ssChestChance: 0.05 },
+      { id: 2, name: "Chương 2", minLv: 41, maxLv: 100, seconds: 7, gold: [200, 800], exp: [36, 58], diamondChance: 0.3, diamondAmount: 30, ssChestChance: 0.06 },
+      { id: 4, name: "Chương 4", minLv: 101, maxLv: 150, seconds: 8, gold: [400, 1100], exp: [60, 92], diamondChance: 0.3, diamondAmount: 40, ssChestChance: 0.065 },
+      { id: 5, name: "Chương 5", minLv: 151, maxLv: 210, seconds: 10, gold: [500, 1500], exp: [95, 140], diamondChance: 0.3, diamondAmount: 55, ssChestChance: 0.07 },
+    ];
+
+    const giftcodes = {
+      TANBINH111: { diamonds: 500 },
+      CHIENBINHTOITHUONG: { diamonds: 1000 },
+      CHIENDAU: { diamonds: 2000 },
+      CODETUAN0001: { diamonds: 500 },
+      KHAITRUONG: { diamonds: 5000 },
+      LEOTOP001: { expBoost: 2, durationMs: HOUR, label: "x2 EXP trong 1 giờ" },
+      LEOTOP002: { expBoost: 2, durationMs: HOUR, label: "x2 EXP trong 1 giờ" },
+      LEOTOP003: { expBoost: 3, durationMs: 30 * 60 * 1000, label: "x3 EXP trong 30 phút" },
+    };
+
+    const tabs = [
+      ["detective", "Trinh thám"],
+      ["gacha", "Gacha"],
+      ["heroes", "Nhân vật"],
+      ["support", "Chi viện"],
+      ["arena", "Leo top"],
+      ["gift", "Giftcode"],
+    ];
+
+    let game = null;
+    let activeTab = "detective";
+    let notice = "Chào mừng đến game sưu tầm nhân vật.";
+    let heroFilter = "";
+    let animationFrame = null;
+    let canvasFrame = 0;
+
+    function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+    function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+    function formatNum(n) {
+      if (n >= 1000000000) return (n / 1000000000).toFixed(2) + "B";
+      if (n >= 1000000) return (n / 1000000).toFixed(2) + "M";
+      if (n >= 1000) return (n / 1000).toFixed(1) + "k";
+      return String(n);
+    }
+    function rankPowerMultiplier(level) { return 1 + level * 0.08 + Math.floor(level / 10) * 0.03; }
+    function superCardNeed(level) {
+      if (level < 30) return 0;
+      if (level < 70) return 1;
+      if (level < 120) return 2;
+      if (level < 160) return 3;
+      if (level < 210) return 4;
+      if (level < 260) return 5;
+      if (level < 320) return 6;
+      return 7;
+    }
+    function normalCardNeed(level) { return 5 + Math.floor(level * 1.5); }
+    function needsBreakthrough(level) { return level > 0 && level % 100 === 0; }
+    function gachaGoldCost(level, times) {
+      const base = times === 10 ? 20000 : 2000;
+      const extra = Math.floor(level * (times === 10 ? 60 : 8));
+      return base + extra;
+    }
+    function expNeededForLevel(level) {
+      if (level >= 210) return 0;
+      return Math.floor(45 + level * 9 + Math.pow(level, 1.22) * 1.75);
+    }
+    function gainPlayerExp(player, gainedExp) {
+      let level = player.level;
+      let exp = player.exp + gainedExp;
+      while (level < player.maxLevel) {
+        const need = expNeededForLevel(level);
+        if (exp < need) break;
+        exp -= need;
+        level += 1;
+      }
+      if (level >= player.maxLevel) {
+        level = player.maxLevel;
+        exp = 0;
+      }
+      return { ...player, level, exp };
+    }
+    function makeHeroEntry(hero, rank) {
+      return {
+        id: hero.name + "-" + rank,
+        name: hero.name,
+        rank,
+        basePower: hero.power,
+        level: 1,
+        copies: 1,
+        breakthroughUsed: 0,
+        obtainedAt: Date.now(),
+      };
+    }
+    function heroCurrentPower(hero) { return Math.floor(hero.basePower * rankPowerMultiplier(hero.level)); }
+    function getAllHeroPool() {
+      return Object.entries(heroes).flatMap(function(entry) {
+        const rank = entry[0];
+        const list = entry[1];
+        return list.map(function(h) { return { ...h, rank: rank }; });
+      });
+    }
+    function drawByRate(rateTable) {
+      const r = Math.random();
+      let acc = 0;
+      for (let i = 0; i < rateTable.length; i += 1) {
+        acc += rateTable[i].rate;
+        if (r <= acc) return rateTable[i].rank;
+      }
+      return rateTable[rateTable.length - 1].rank;
+    }
+    function generateArenaBots() {
+      const fixed = [
+        { name: "GukiNo.9", power: 1050000000 },
+        { name: "Tjki910", power: 1035000000 },
+        { name: "ỤN ỤN", power: 994000000 },
+      ];
+      const names = ["Kaio", "Mafuba", "BunBun", "Karin", "Beri", "ZenoKid", "SatanPro", "Kaioshin", "Tapion", "MiraX", "JirenFake", "CoolerVN"];
+      const bots = [];
+      for (let i = 0; i < 60; i += 1) {
+        bots.push({ name: pickRandom(names) + "_" + (i + 1), power: rand(120000000, 980000000) });
+      }
+      return fixed.concat(bots).sort(function(a, b) { return b.power - a.power; });
+    }
+    function randomSupportOffers() {
+      return {
+        sss: pickRandom(heroes.SSS),
+        ss: [pickRandom(heroes.SS), pickRandom(heroes.SS), pickRandom(heroes.SS)],
+        generatedAt: Date.now(),
+      };
+    }
+    function createDefaultState() {
+      const starter = makeHeroEntry(heroes.B[0], "B");
+      return {
+        player: { name: "Thám Tử Tân Binh", level: 1, exp: 0, maxLevel: 210, rankPoints: 0 },
+        buffs: { expMultiplier: 1, expBoostEndsAt: null, expBoostLabel: "" },
+        resources: { diamonds: 3000, gold: 10000, breakthroughCards: 5, normalUpgradeCards: 500, superUpgradeCards: 120, ssChest: 0 },
+        heroesOwned: { [starter.id]: starter },
+        team: [starter.id],
+        detective: { runningChapterId: null, endsAt: null, logs: ["Bắt đầu hành trình trinh thám."] },
+        gacha: { history: [] },
+        supportShop: randomSupportOffers(),
+        arena: { bots: generateArenaBots(), logs: [] },
+        redeemedCodes: [],
+        meta: { lastSavedAt: Date.now(), version: 2 },
+      };
+    }
+    function loadGame() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return createDefaultState();
+        const parsed = JSON.parse(raw);
+        return { ...createDefaultState(), ...parsed };
+      } catch (e) {
+        return createDefaultState();
+      }
+    }
+    function saveGame() {
+      game.meta = { ...(game.meta || {}), lastSavedAt: Date.now(), version: 2 };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(game));
+    }
+    function getPlayerTeamPower() {
+      return game.team.reduce(function(sum, id) {
+        const hero = game.heroesOwned[id];
+        return hero ? sum + heroCurrentPower(hero) : sum;
+      }, 0);
+    }
+    function mergeHero(heroData, rank) {
+      const id = heroData.name + "-" + rank;
+      const existed = game.heroesOwned[id];
+      game.heroesOwned[id] = existed ? { ...existed, copies: (existed.copies || 1) + 1 } : makeHeroEntry(heroData, rank);
+    }
+    function setMessage(msg) {
+      notice = msg;
+      document.getElementById("notice").textContent = msg;
+    }
+
+    function el(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined) node.textContent = text;
+      return node;
+    }
+    function clearNode(node) {
+      while (node.firstChild) node.removeChild(node.firstChild);
+    }
+    function makeButton(text, className, handler, disabled) {
+      const btn = el("button", className || "", text);
+      if (disabled) btn.disabled = true;
+      btn.addEventListener("click", handler);
+      return btn;
+    }
+    function makeProgress(percent) {
+      const outer = el("div", "progress");
+      const inner = el("div", "progress-bar");
+      inner.style.width = Math.max(0, Math.min(100, percent)) + "%";
+      outer.appendChild(inner);
+      return outer;
+    }
+
+    function switchTab(name) {
+      activeTab = name;
+      renderTabs();
+      renderPanels();
+    }
+
+    function startDetective(chapterId) {
+      const chapter = chapters.find(function(c) { return c.id === chapterId; });
+      if (!chapter) return;
+      if (game.detective.runningChapterId) return setMessage("Đang trinh thám, hãy chờ hoàn tất.");
+      if (game.player.level < chapter.minLv || game.player.level > chapter.maxLv) {
+        return setMessage("Bạn cần ở khoảng lv " + chapter.minLv + "-" + chapter.maxLv + " để chơi " + chapter.name + ".");
+      }
+      game.detective.runningChapterId = chapterId;
+      game.detective.endsAt = Date.now() + chapter.seconds * 1000;
+      saveGame();
+      renderPanels();
+      setMessage("Đã bắt đầu " + chapter.name + ".");
+    }
+
+    function performDraw(times, currency) {
+      const key = currency === "diamonds" ? "diamonds" : "gold";
+      const cost = currency === "diamonds" ? (times === 10 ? 1800 : 200) : gachaGoldCost(game.player.level, times);
+      if (game.resources[key] < cost) return setMessage("Không đủ " + (currency === "diamonds" ? "kim cương" : "vàng") + ".");
+      const rewards = [];
+      for (let i = 0; i < times; i += 1) {
+        let rank = drawByRate(rarityRate);
+        if (times === 10 && i === 9 && !rewards.some(function(r) { return r.rank === "S" || r.rank === "SS"; })) {
+          rank = Math.random() < 0.75 ? "S" : "SS";
+        }
+        const hero = pickRandom(heroes[rank]);
+        mergeHero(hero, rank);
+        rewards.push({ ...hero, rank: rank });
+      }
+      game.resources[key] -= cost;
+      game.gacha.history = rewards.map(function(r) { return r.name + " [" + r.rank + "]"; }).concat(game.gacha.history).slice(0, 30);
+      saveGame();
+      renderAll();
+      setMessage("Quay " + times + " lần thành công: " + rewards.map(function(r) { return r.name + "(" + r.rank + ")"; }).join(", "));
+    }
+
+    function openSSChest() {
+      if (game.resources.ssChest <= 0) return setMessage("Bạn chưa có hòm SS.");
+      const hero = pickRandom(heroes.SS);
+      game.resources.ssChest -= 1;
+      mergeHero(hero, "SS");
+      saveGame();
+      renderAll();
+      setMessage("Mở hòm nhận được " + hero.name + " [SS].");
+    }
+
+    function addToTeam(heroId) {
+      if (game.team.includes(heroId)) return setMessage("Nhân vật đã ở trong đội.");
+      if (game.team.length >= 5) return setMessage("Đội hình tối đa 5 nhân vật.");
+      game.team.push(heroId);
+      saveGame();
+      renderAll();
+      setMessage("Đã thêm vào đội hình.");
+    }
+
+    function removeFromTeam(heroId) {
+      game.team = game.team.filter(function(id) { return id !== heroId; });
+      saveGame();
+      renderAll();
+      setMessage("Đã bỏ khỏi đội hình.");
+    }
+
+    function upgradeHero(heroId, count) {
+      const owned = game.heroesOwned[heroId];
+      if (!owned) return;
+      let upgraded = 0;
+      const maxLv = heroMaxLvByRank[owned.rank];
+      for (let i = 0; i < count; i += 1) {
+        if (owned.level >= maxLv) break;
+        const needNormal = normalCardNeed(owned.level);
+        const needSuper = superCardNeed(owned.level);
+        const requireBreak = needsBreakthrough(owned.level) && owned.breakthroughUsed < Math.floor(owned.level / 100);
+        if (game.resources.normalUpgradeCards < needNormal) break;
+        if (game.resources.superUpgradeCards < needSuper) break;
+        if (requireBreak && game.resources.breakthroughCards < 1) break;
+        game.resources.normalUpgradeCards -= needNormal;
+        game.resources.superUpgradeCards -= needSuper;
+        if (requireBreak) {
+          game.resources.breakthroughCards -= 1;
+          owned.breakthroughUsed += 1;
+        }
+        owned.level += 1;
+        upgraded += 1;
+      }
+      if (upgraded === 0) return setMessage("Không đủ tài nguyên nâng cấp hoặc đã đạt cấp tối đa.");
+      saveGame();
+      renderAll();
+      setMessage("Đã nâng " + owned.name + " +" + upgraded + " cấp.");
+    }
+
+    function buySupport(rank, index) {
+      if (rank === "SSS") {
+        if (game.resources.diamonds < 8888) return setMessage("Không đủ kim cương.");
+        game.resources.diamonds -= 8888;
+        mergeHero(game.supportShop.sss, "SSS");
+        saveGame();
+        renderAll();
+        return setMessage("Đã mua " + game.supportShop.sss.name + " [SSS].");
+      }
+      if (game.resources.diamonds < 6666) return setMessage("Không đủ kim cương.");
+      const hero = game.supportShop.ss[index];
+      game.resources.diamonds -= 6666;
+      mergeHero(hero, "SS");
+      saveGame();
+      renderAll();
+      setMessage("Đã mua " + hero.name + " [SS].");
+    }
+
+    function refreshSupport() {
+      game.supportShop = randomSupportOffers();
+      saveGame();
+      renderAll();
+      setMessage("Đã làm mới shop chi viện.");
+    }
+
+    function getArenaBoard() {
+      const me = { name: game.player.name, power: getPlayerTeamPower(), isPlayer: true };
+      return game.arena.bots.concat(me).sort(function(a, b) { return b.power - a.power; }).slice(0, 20);
+    }
+
+    function fightArena(index) {
+      const enemy = getArenaBoard()[index];
+      if (!enemy || enemy.isPlayer) return;
+      const myPower = getPlayerTeamPower();
+      const ratio = myPower / Math.max(1, enemy.power);
+      const chance = Math.min(0.95, Math.max(0.08, 0.35 + (ratio - 1) * 0.45));
+      const win = Math.random() < chance;
+      game.player.rankPoints += win ? 30 : 8;
+      game.resources.gold += win ? rand(500, 1400) : rand(120, 500);
+      game.resources.diamonds += win ? rand(15, 35) : 0;
+      game.resources.normalUpgradeCards += win ? rand(15, 40) : rand(3, 8);
+      game.resources.superUpgradeCards += win ? rand(1, 4) : 0;
+      game.arena.logs.unshift((win ? "Thắng " : "Thua ") + enemy.name + " (" + formatNum(enemy.power) + ")");
+      game.arena.logs = game.arena.logs.slice(0, 20);
+      saveGame();
+      renderAll();
+      setMessage(win ? "Bạn đã thắng " + enemy.name + "!" : "Bạn thua " + enemy.name + ", hãy mạnh hơn nữa.");
+    }
+
+    function redeemCode() {
+      const input = document.getElementById("giftcodeInput");
+      if (!input) return;
+      const code = input.value.trim().toUpperCase();
+      if (!code) return setMessage("Hãy nhập giftcode.");
+      if (!giftcodes[code]) return setMessage("Giftcode không hợp lệ.");
+      if (game.redeemedCodes.includes(code)) return setMessage("Bạn đã nhập code này rồi.");
+      const reward = giftcodes[code];
+      if (reward.diamonds) game.resources.diamonds += reward.diamonds;
+      if (reward.expBoost) {
+        game.buffs = {
+          expMultiplier: reward.expBoost,
+          expBoostEndsAt: Date.now() + reward.durationMs,
+          expBoostLabel: reward.label,
+        };
+      }
+      game.redeemedCodes.push(code);
+      input.value = "";
+      saveGame();
+      renderAll();
+      setMessage(reward.expBoost ? "Kích hoạt thành công " + reward.label + " từ code " + code + "." : "Nhận thành công " + reward.diamonds + " kim cương từ code " + code + ".");
+    }
+
+    function resetSave() {
+      game = createDefaultState();
+      saveGame();
+      renderAll();
+      setMessage("Đã reset dữ liệu game.");
+    }
+
+    function setHeroFilter(value) {
+      heroFilter = value.trim().toLowerCase();
+      if (activeTab === "heroes") renderHeroes();
+    }
+
+    function tickGame() {
+      const now = Date.now();
+      let changed = false;
+      if (game.supportShop.generatedAt + HOUR <= now || game.supportShop.generatedAt + MIN20 <= now) {
+        const needSSS = game.supportShop.generatedAt + HOUR <= now;
+        const needSS = game.supportShop.generatedAt + MIN20 <= now;
+        if (needSSS || needSS) {
+          const offers = randomSupportOffers();
+          game.supportShop = {
+            sss: needSSS ? offers.sss : game.supportShop.sss,
+            ss: needSS ? offers.ss : game.supportShop.ss,
+            generatedAt: now,
+          };
+          changed = true;
+        }
+      }
+      if (game.buffs.expBoostEndsAt && game.buffs.expBoostEndsAt <= now && game.buffs.expMultiplier > 1) {
+        game.buffs = { expMultiplier: 1, expBoostEndsAt: null, expBoostLabel: "" };
+        changed = true;
+      }
+      if (game.detective.runningChapterId && game.detective.endsAt && now >= game.detective.endsAt) {
+        const chapter = chapters.find(function(c) { return c.id === game.detective.runningChapterId; });
+        if (chapter) {
+          const gold = rand(chapter.gold[0], chapter.gold[1]);
+          const baseExp = rand(chapter.exp[0], chapter.exp[1]);
+          const multiplier = game.buffs.expBoostEndsAt && game.buffs.expBoostEndsAt > now ? game.buffs.expMultiplier : 1;
+          const expGain = Math.floor(baseExp * multiplier);
+          const gotDiamond = Math.random() < chapter.diamondChance;
+          const gotChest = Math.random() < chapter.ssChestChance;
+          const nextPlayer = gainPlayerExp(game.player, expGain);
+          const levelDiff = nextPlayer.level - game.player.level;
+          game.player = nextPlayer;
+          game.resources.gold += gold;
+          if (gotDiamond) game.resources.diamonds += chapter.diamondAmount;
+          if (gotChest) game.resources.ssChest += 1;
+          game.detective.logs.unshift(chapter.name + " hoàn tất: +" + gold + " vàng, +" + expGain + " EXP" + (multiplier > 1 ? " (" + baseExp + " x" + multiplier + ")" : "") + (gotDiamond ? ", +" + chapter.diamondAmount + " kim cương" : "") + (gotChest ? ", +1 hòm SS" : "") + (levelDiff > 0 ? ", lên " + levelDiff + " lv" : ""));
+          game.detective.logs = game.detective.logs.slice(0, 20);
+          game.detective.runningChapterId = null;
+          game.detective.endsAt = null;
+          changed = true;
+        }
+      }
+      if (changed) saveGame();
+      renderDynamic();
+    }
+
+    function renderTabs() {
+      const tabsBar = document.getElementById("tabsBar");
+      clearNode(tabsBar);
+      tabs.forEach(function(item) {
+        const key = item[0];
+        const label = item[1];
+        const className = key === activeTab ? "active-tab" : "outline";
+        tabsBar.appendChild(makeButton(label, className, function() { switchTab(key); }, false));
+      });
+    }
+
+    function renderStats() {
+      const statsGrid = document.getElementById("statsGrid");
+      clearNode(statsGrid);
+      const stats = [
+        ["Kim cương", game.resources.diamonds],
+        ["Vàng", game.resources.gold],
+        ["Thẻ đột phá", game.resources.breakthroughCards],
+        ["Thẻ siêu cấp", game.resources.superUpgradeCards],
+        ["Thẻ thường", game.resources.normalUpgradeCards],
+        ["Hòm SS", game.resources.ssChest],
+      ];
+      stats.forEach(function(pair) {
+        const card = el("div", "mini-card");
+        card.appendChild(el("div", "sub", pair[0]));
+        const value = el("div", "", String(pair[1]));
+        value.style.fontSize = "24px";
+        value.style.fontWeight = "800";
+        value.style.marginTop = "6px";
+        card.appendChild(value);
+        statsGrid.appendChild(card);
+      });
+    }
+
+    function renderAccount() {
+      const accountInfo = document.getElementById("accountInfo");
+      clearNode(accountInfo);
+      const need = expNeededForLevel(game.player.level);
+      const percent = need > 0 ? Math.min(100, (game.player.exp / need) * 100) : 100;
+      const items = [
+        ["Tên", game.player.name],
+        ["Đội hình", game.team.length + "/5"],
+        ["Lực chiến đội", formatNum(getPlayerTeamPower())],
+      ];
+
+      const nameCard = el("div", "mini-card");
+      nameCard.appendChild(el("div", "sub", "Tên"));
+      nameCard.appendChild(el("div", "strong", game.player.name));
+      accountInfo.appendChild(nameCard);
+
+      const levelCard = el("div", "mini-card");
+      levelCard.appendChild(el("div", "sub", "Lv"));
+      levelCard.appendChild(el("div", "strong", game.player.level + "/" + game.player.maxLevel));
+      const progress = makeProgress(percent);
+      progress.style.marginTop = "10px";
+      levelCard.appendChild(progress);
+      const expText = el("div", "sub", "EXP: " + game.player.exp + "/" + need);
+      expText.style.marginTop = "8px";
+      levelCard.appendChild(expText);
+      accountInfo.appendChild(levelCard);
+
+      items.slice(1).forEach(function(pair) {
+        const card = el("div", "mini-card");
+        card.appendChild(el("div", "sub", pair[0]));
+        card.appendChild(el("div", "strong", pair[1]));
+        accountInfo.appendChild(card);
+      });
+
+      const remain = game.buffs.expBoostEndsAt ? Math.max(0, game.buffs.expBoostEndsAt - Date.now()) : 0;
+      document.getElementById("buffInfo").textContent = game.buffs.expMultiplier > 1 && remain > 0
+        ? "Buff EXP đang chạy: " + game.buffs.expBoostLabel + " · còn ~ " + Math.ceil(remain / 60000) + " phút"
+        : "";
+    }
+
+    function renderDetective() {
+      const root = document.getElementById("tab-detective");
+      clearNode(root);
+      const wrapper = el("div", "grid two-col");
+
+      const left = el("div", "card");
+      left.appendChild(el("div", "section-title", "Chế độ trinh thám"));
+      const chapterGrid = el("div", "inner-grid-2");
+      chapters.forEach(function(chapter) {
+        const card = el("div", "mini-card");
+        card.appendChild(el("div", "strong", chapter.name));
+        card.appendChild(el("div", "sub", "Lv " + chapter.minLv + "-" + chapter.maxLv + " · " + chapter.seconds + "s"));
+        const fields = [
+          "Vàng: " + chapter.gold[0] + "-" + chapter.gold[1],
+          "EXP: " + chapter.exp[0] + "-" + chapter.exp[1],
+          "Kim cương: " + Math.round(chapter.diamondChance * 100) + "% nhận " + chapter.diamondAmount,
+          "Hòm SS: " + (chapter.ssChestChance * 100).toFixed(1) + "%",
+        ];
+        fields.forEach(function(text, index) {
+          const line = el("div", index === 0 ? "spacer-8" : "", text);
+          card.appendChild(line);
+        });
+        const btnWrap = el("div", "spacer-10");
+        btnWrap.appendChild(makeButton("Bắt đầu", "", function() { startDetective(chapter.id); }, Boolean(game.detective.runningChapterId)));
+        card.appendChild(btnWrap);
+        chapterGrid.appendChild(card);
+      });
+      left.appendChild(chapterGrid);
+
+      const right = el("div", "card");
+      right.appendChild(el("div", "section-title", "Tiến trình"));
+      const current = chapters.find(function(c) { return c.id === game.detective.runningChapterId; });
+      const remain = game.detective.endsAt ? Math.max(0, game.detective.endsAt - Date.now()) : 0;
+      if (current) {
+        const line = el("div", "", "Đang chạy: ");
+        const bold = el("b", "", current.name);
+        line.appendChild(bold);
+        right.appendChild(line);
+        const bar = makeProgress(100 - (remain / (current.seconds * 1000)) * 100);
+        bar.style.marginTop = "12px";
+        right.appendChild(bar);
+        const remainText = el("div", "sub spacer-8", "Còn lại ~ " + Math.ceil(remain / 1000) + " giây");
+        right.appendChild(remainText);
+      } else {
+        right.appendChild(el("div", "sub", "Chưa có nhiệm vụ đang chạy."));
+      }
+      const logs = el("div", "list-box spacer-14");
+      logs.style.maxHeight = "260px";
+      game.detective.logs.forEach(function(log) { logs.appendChild(el("div", "log-item", log)); });
+      right.appendChild(logs);
+
+      wrapper.appendChild(left);
+      wrapper.appendChild(right);
+      root.appendChild(wrapper);
+    }
+
+    function renderGacha() {
+      const root = document.getElementById("tab-gacha");
+      clearNode(root);
+      const wrapper = el("div", "grid two-col");
+
+      const left = el("div", "card");
+      left.appendChild(el("div", "section-title", "Triệu hồi"));
+      const infoGrid = el("div", "inner-grid-2");
+      const rateCard = el("div", "mini-card");
+      rateCard.appendChild(el("div", "strong", "Tỉ lệ"));
+      ["B: 50%", "A: 33%", "S: 15%", "SS: 2%"].forEach(function(t, idx) {
+        const line = el("div", idx === 0 ? "spacer-8" : "", t);
+        rateCard.appendChild(line);
+      });
+      const pity = el("div", "spacer-8", "10 lần chắc chắn có ít nhất 1 hero bậc S trở lên");
+      pity.style.color = "#6b7280";
+      pity.style.fontWeight = "700";
+      rateCard.appendChild(pity);
+
+      const costCard = el("div", "mini-card");
+      costCard.appendChild(el("div", "", "1 lần: 200 kim cương / " + gachaGoldCost(game.player.level, 1) + " vàng"));
+      const cost2 = el("div", "spacer-8", "10 lần: 1800 kim cương / " + gachaGoldCost(game.player.level, 10) + " vàng");
+      costCard.appendChild(cost2);
+      const note = el("div", "sub spacer-8", "Giá vàng tăng theo level tài khoản.");
+      costCard.appendChild(note);
+
+      infoGrid.appendChild(rateCard);
+      infoGrid.appendChild(costCard);
+      left.appendChild(infoGrid);
+
+      const actions = el("div", "actions spacer-14");
+      actions.appendChild(makeButton("1 lần / 200 KC", "", function() { performDraw(1, "diamonds"); }, false));
+      actions.appendChild(makeButton("10 lần / 1800 KC", "", function() { performDraw(10, "diamonds"); }, false));
+      actions.appendChild(makeButton("1 lần / vàng", "secondary", function() { performDraw(1, "gold"); }, false));
+      actions.appendChild(makeButton("10 lần / vàng", "secondary", function() { performDraw(10, "gold"); }, false));
+      left.appendChild(actions);
+
+      const right = el("div", "card");
+      right.appendChild(el("div", "section-title", "Lịch sử quay"));
+      const logs = el("div", "list-box");
+      if (game.gacha.history.length) {
+        game.gacha.history.forEach(function(item) { logs.appendChild(el("div", "log-item", item)); });
+      } else {
+        logs.appendChild(el("div", "sub", "Chưa có lượt quay nào."));
+      }
+      right.appendChild(logs);
+
+      wrapper.appendChild(left);
+      wrapper.appendChild(right);
+      root.appendChild(wrapper);
+    }
+
+    function renderHeroes() {
+      const root = document.getElementById("tab-heroes");
+      clearNode(root);
+
+      const searchCard = el("div", "card");
+      searchCard.style.marginBottom = "16px";
+      const row = el("div", "row");
+      const input = document.createElement("input");
+      input.placeholder = "Tìm nhân vật hoặc bậc...";
+      input.value = heroFilter;
+      input.style.maxWidth = "360px";
+      input.addEventListener("input", function(e) { setHeroFilter(e.target.value); });
+      row.appendChild(input);
+      row.appendChild(el("div", "sub", "Hiển thị cả nhân vật đã có và chưa có · chọn đội hình tối đa 5 hero"));
+      searchCard.appendChild(row);
+      root.appendChild(searchCard);
+
+      const heroGrid = el("div", "grid hero-grid");
+      const pool = getAllHeroPool().filter(function(hero) {
+        return !heroFilter || hero.name.toLowerCase().includes(heroFilter) || hero.rank.toLowerCase().includes(heroFilter);
+      });
+      pool.forEach(function(hero) {
+        const id = hero.name + "-" + hero.rank;
+        const owned = game.heroesOwned[id];
+        const inTeam = game.team.includes(id);
+        const card = el("div", "card");
+        const header = el("div", "row");
+        const left = el("div");
+        left.appendChild(el("div", "strong", hero.name));
+        left.appendChild(el("div", "sub", "Bậc " + hero.rank));
+        const badge = el("span", "badge " + hero.rank, hero.rank);
+        header.appendChild(left);
+        header.appendChild(badge);
+        card.appendChild(header);
+        const basePower = el("div", "spacer-10", "Lực chiến gốc: ");
+        const strong = el("b", "", formatNum(hero.power));
+        basePower.appendChild(strong);
+        card.appendChild(basePower);
+
+        if (owned) {
+          const lv = el("div", "spacer-8", "Lv: ");
+          lv.appendChild(el("b", "", owned.level + "/" + heroMaxLvByRank[hero.rank]));
+          lv.appendChild(document.createTextNode(" · Bản sao: "));
+          lv.appendChild(el("b", "", String(owned.copies)));
+          card.appendChild(lv);
+          const cur = el("div", "spacer-8", "Lực chiến hiện tại: ");
+          cur.appendChild(el("b", "", formatNum(heroCurrentPower(owned))));
+          card.appendChild(cur);
+          const actions = el("div", "hero-actions spacer-10");
+          actions.appendChild(inTeam
+            ? makeButton("Bỏ khỏi đội", "outline", function() { removeFromTeam(id); }, false)
+            : makeButton("Cho vào đội", "", function() { addToTeam(id); }, false));
+          actions.appendChild(makeButton("+1 lv", "secondary", function() { upgradeHero(id, 1); }, false));
+          actions.appendChild(makeButton("+10 lv", "secondary", function() { upgradeHero(id, 10); }, false));
+          card.appendChild(actions);
+        } else {
+          card.appendChild(el("div", "sub spacer-8", "Chưa sở hữu"));
+        }
+        heroGrid.appendChild(card);
+      });
+      root.appendChild(heroGrid);
+    }
+
+    function renderSupport() {
+      const root = document.getElementById("tab-support");
+      clearNode(root);
+      const wrapper = el("div", "grid two-col");
+
+      const left = el("div", "card");
+      const leftHead = el("div", "row");
+      leftHead.appendChild(el("div", "section-title", "Sự kiện Hero Chi viện"));
+      leftHead.appendChild(makeButton("Làm mới", "outline", refreshSupport, false));
+      left.appendChild(leftHead);
+
+      const sssCard = el("div", "mini-card");
+      sssCard.style.background = "#fffbeb";
+      sssCard.style.marginBottom = "14px";
+      sssCard.appendChild(el("div", "strong", "Hero SSS (reset mỗi 1 giờ)"));
+      sssCard.appendChild(el("div", "spacer-8", game.supportShop.sss.name));
+      sssCard.appendChild(el("div", "sub", "Lực chiến: " + formatNum(game.supportShop.sss.power)));
+      const sssBtnWrap = el("div", "spacer-10");
+      sssBtnWrap.appendChild(makeButton("Mua 8888 kim cương", "", function() { buySupport("SSS"); }, false));
+      sssCard.appendChild(sssBtnWrap);
+      left.appendChild(sssCard);
+
+      const supportGrid = el("div", "support-grid");
+      game.supportShop.ss.forEach(function(hero, idx) {
+        const card = el("div", "mini-card");
+        card.style.background = "#fdf4ff";
+        card.appendChild(el("div", "strong", hero.name));
+        card.appendChild(el("div", "sub", "SS · " + formatNum(hero.power)));
+        const wrap = el("div", "spacer-10");
+        wrap.appendChild(makeButton("6666 KC", "", function() { buySupport("SS", idx); }, false));
+        card.appendChild(wrap);
+        supportGrid.appendChild(card);
+      });
+      left.appendChild(supportGrid);
+
+      const right = el("div", "card");
+      right.appendChild(el("div", "section-title", "Ghi chú reset"));
+      const list = el("div", "list-box");
+      list.style.maxHeight = "none";
+      [
+        "- Hero SSS đổi sau mỗi 1 giờ.",
+        "- 3 Hero SS đổi sau mỗi 20 phút.",
+        "- Dữ liệu shop, nhân vật và tài nguyên đều được lưu bằng localStorage.",
+        "- Sau này thêm tính năng mới vẫn có thể giữ save bằng cách giữ STORAGE_KEY hoặc viết migrate version.",
+      ].forEach(function(item) { list.appendChild(el("div", "log-item", item)); });
+      right.appendChild(list);
+
+      wrapper.appendChild(left);
+      wrapper.appendChild(right);
+      root.appendChild(wrapper);
+    }
+
+    function renderArena() {
+      const root = document.getElementById("tab-arena");
+      clearNode(root);
+      const wrapper = el("div", "grid two-col");
+      const board = getArenaBoard();
+
+      const left = el("div", "card");
+      left.appendChild(el("div", "section-title", "Leo Top đỉnh cao"));
+      const list = el("div", "list-box");
+      list.style.maxHeight = "460px";
+      board.forEach(function(row, idx) {
+        const item = el("div", "rank-item");
+        const line = el("div", "row");
+        const info = el("div");
+        const title = el("div", "strong", "#" + (idx + 1) + " " + row.name);
+        if (row.isPlayer) {
+          const badge = el("span", "badge S", "Bạn");
+          badge.style.marginLeft = "8px";
+          title.appendChild(document.createTextNode(" "));
+          title.appendChild(badge);
+        }
+        info.appendChild(title);
+        info.appendChild(el("div", "sub", "Lực chiến: " + formatNum(row.power)));
+        line.appendChild(info);
+        if (!row.isPlayer) line.appendChild(makeButton("Thách đấu", "", function() { fightArena(idx); }, false));
+        item.appendChild(line);
+        list.appendChild(item);
+      });
+      left.appendChild(list);
+
+      const right = el("div", "card");
+      right.appendChild(el("div", "section-title", "Nhật ký đấu trường"));
+      const logs = el("div", "list-box");
+      if (game.arena.logs.length) {
+        game.arena.logs.forEach(function(log) { logs.appendChild(el("div", "log-item", log)); });
+      } else {
+        logs.appendChild(el("div", "sub", "Chưa có trận đấu nào."));
+      }
+      right.appendChild(logs);
+
+      wrapper.appendChild(left);
+      wrapper.appendChild(right);
+      root.appendChild(wrapper);
+    }
+
+    function renderGift() {
+      const root = document.getElementById("tab-gift");
+      clearNode(root);
+      const wrapper = el("div", "gift-single");
+      const card = el("div", "card");
+      card.appendChild(el("div", "section-title", "Nhập giftcode"));
+      const input = document.createElement("input");
+      input.id = "giftcodeInput";
+      input.placeholder = "Nhập giftcode...";
+      card.appendChild(input);
+      const btnWrap = el("div", "spacer-12");
+      btnWrap.appendChild(makeButton("Nhận quà", "", redeemCode, false));
+      card.appendChild(btnWrap);
+      card.appendChild(el("div", "sub spacer-10", "Code đã nhập sẽ được lưu lại, không dùng lại được."));
+      card.appendChild(el("div", "sub spacer-8", "Code buff mới: LEOTOP001, LEOTOP002, LEOTOP003."));
+      wrapper.appendChild(card);
+      root.appendChild(wrapper);
+    }
+
+    function renderQuickChecks() {
+      const quick = document.getElementById("quickChecks");
+      clearNode(quick);
+      [
+        "expNeededForLevel(1) = " + expNeededForLevel(1),
+        "expNeededForLevel(100) = " + expNeededForLevel(100),
+        "gachaGoldCost(1, 1) = " + gachaGoldCost(1, 1),
+        "gachaGoldCost(50, 10) = " + gachaGoldCost(50, 10),
+        "Tỉ lệ gacha hiện tại = B 50% · A 33% · S 15% · SS 2%",
+        "Tổng hero trong pool = " + getAllHeroPool().length,
+        "Top arena hiển thị = " + getArenaBoard().length,
+        "Buff EXP hiện tại = x" + game.buffs.expMultiplier,
+      ].forEach(function(item) {
+        quick.appendChild(el("div", "log-item", item));
+      });
+    }
+
+    function renderPanels() {
+      document.querySelectorAll(".tab-panel").forEach(function(panel) { panel.classList.remove("active"); });
+      document.getElementById("tab-" + activeTab).classList.add("active");
+      renderDetective();
+      renderGacha();
+      renderHeroes();
+      renderSupport();
+      renderArena();
+      renderGift();
+    }
+
+    function renderDynamic() {
+      renderStats();
+      renderAccount();
+      renderQuickChecks();
+      if (activeTab === "detective") renderDetective();
+      if (activeTab === "arena") renderArena();
+    }
+
+    function renderAll() {
+      renderTabs();
+      renderStats();
+      renderAccount();
+      renderPanels();
+      renderQuickChecks();
+      document.getElementById("notice").textContent = notice;
+    }
+
+    function startCanvas() {
+      const canvas = document.getElementById("gameCanvas");
+      const ctx = canvas.getContext("2d");
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+      function draw() {
+        canvasFrame += 1;
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+        const grad = ctx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, "#111827");
+        grad.addColorStop(1, "#4b5563");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+        for (let i = 0; i < 40; i += 1) {
+          const x = (i * 97 + canvasFrame * 0.4) % w;
+          const y = (i * 37 + Math.sin((canvasFrame + i * 12) / 20) * 20 + h / 2) % h;
+          ctx.beginPath();
+          ctx.arc(x, y, 2 + (i % 3), 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(255,255,255," + (0.15 + (i % 5) * 0.08) + ")";
+          ctx.fill();
+        }
+        ctx.fillStyle = "rgba(255,255,255,0.92)";
+        ctx.font = "bold 28px sans-serif";
+        ctx.fillText("DRAGON DETECTIVE GACHA", 24, 48);
+        ctx.font = "16px sans-serif";
+        ctx.fillText("Lv tài khoản: " + game.player.level + " / " + game.player.maxLevel, 24, 78);
+        ctx.fillText("EXP: " + game.player.exp + " / " + (expNeededForLevel(game.player.level) || 0), 24, 102);
+        ctx.fillText("Lực chiến đội hình: " + formatNum(getPlayerTeamPower()), 24, 126);
+        ctx.fillText("Kim cương: " + game.resources.diamonds + " | Vàng: " + game.resources.gold, 24, 150);
+        ctx.fillText("Đội hình: " + game.team.length + "/5", 24, 174);
+        ctx.strokeStyle = "rgba(255,255,255,0.25)";
+        ctx.strokeRect(18, 18, w - 36, h - 36);
+        animationFrame = requestAnimationFrame(draw);
+      }
+      draw();
+    }
+
+    function bindStaticActions() {
+      document.getElementById("openSsChestBtn").addEventListener("click", openSSChest);
+      document.getElementById("resetSaveBtn").addEventListener("click", resetSave);
+    }
+
+    function runSelfChecks() {
+      console.assert(expNeededForLevel(1) > 0, "expNeededForLevel(1) phải > 0");
+      console.assert(gachaGoldCost(50, 10) > gachaGoldCost(1, 10), "Giá vàng gacha phải tăng theo level");
+      console.assert(Array.isArray(getArenaBoard()) && getArenaBoard().length <= 20, "BXH arena phải <= 20 phần tử");
+      console.assert(rarityRate.find(function(r) { return r.rank === "SS"; }).rate === 0.02, "Tỉ lệ SS phải là 2%");
+    }
+
+    function init() {
+      game = loadGame();
+      bindStaticActions();
+      startCanvas();
+      renderAll();
+      runSelfChecks();
+      setInterval(tickGame, 1000);
+    }
+
+    init();
+  </script>
+</body>
+</html>
       background: rgba(255, 255, 255, 0.92);
       border: 1px solid rgba(107, 114, 128, 0.18);
       border-radius: 18px;
