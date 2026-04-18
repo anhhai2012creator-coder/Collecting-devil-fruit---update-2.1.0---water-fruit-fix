@@ -143,6 +143,1981 @@
       from { transform: translate(0,0) scale(0.6); opacity: 0.9; }
       to { transform: translate(var(--dx), var(--dy)) scale(1.6); opacity: 0; }
     }
+    .gacha-fx {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 9998;
+      opacity: 0;
+      transition: opacity 180ms ease;
+      background: radial-gradient(circle, rgba(99,102,241,0.16), rgba(17,24,39,0.06));
+    }
+    .gacha-fx.show { opacity: 1; }
+    .gacha-fx-card {
+      min-width: 320px;
+      max-width: 92vw;
+      text-align: center;
+      padding: 30px 24px;
+      border-radius: 24px;
+      background: rgba(255,255,255,0.97);
+      border: 1px solid rgba(107,114,128,0.22);
+      box-shadow: 0 20px 50px rgba(17,24,39,0.2);
+      transform: scale(0.88) translateY(12px);
+      transition: transform 220ms ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .gacha-fx.show .gacha-fx-card { transform: scale(1) translateY(0); }
+    .gacha-fx-title {
+      font-size: 30px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      color: #4338ca;
+      margin-bottom: 8px;
+    }
+    .gacha-fx-sub { color: #4b5563; font-size: 15px; }
+    .gacha-fx-highlight {
+      font-size: 20px;
+      font-weight: 900;
+      margin-top: 14px;
+      color: #111827;
+    }
+    .gacha-fx-burst {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      animation: gachaBurst 820ms ease-out forwards;
+      opacity: 0.85;
+    }
+    @keyframes gachaBurst {
+      from { transform: translate(0,0) scale(0.5); opacity: 0.95; }
+      to { transform: translate(var(--dx), var(--dy)) scale(1.9); opacity: 0; }
+    }
+      to { transform: translate(var(--dx), var(--dy)) scale(1.6); opacity: 0; }
+    }
+    canvas {
+      width: 100%;
+      border-radius: 20px;
+      border: 1px solid rgba(107, 114, 128, 0.2);
+      background: rgba(17, 24, 39, 0.08);
+      display: block;
+    }
+    @media (max-width: 1024px) {
+      .top-grid, .two-col, .inner-grid-2, .three-col { grid-template-columns: 1fr; }
+      .gift-single { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="grid top-grid">
+      <div class="card">
+        <canvas id="gameCanvas" width="920" height="240"></canvas>
+        <div id="notice" class="sub spacer-12">Chào mừng đến game sưu tầm nhân vật.</div>
+      </div>
+      <div class="stats-grid" id="statsGrid"></div>
+    </div>
+
+    <div class="card spacer-14">
+      <div class="row">
+        <div>
+          <div class="section-title">Tài khoản</div>
+          <div class="sub">Dữ liệu được lưu bằng localStorage, reload không mất đồ.</div>
+          <div id="buffInfo" class="sub spacer-8" style="font-weight:700;"></div>
+        </div>
+        <div class="actions">
+          <button class="outline" id="openSsChestBtn">Mở hòm SS</button>
+          <button class="danger" id="resetSaveBtn">Reset save</button>
+        </div>
+      </div>
+      <div class="account-grid" id="accountInfo"></div>
+    </div>
+
+    <div class="tabs" id="tabsBar"></div>
+
+    <div id="tab-detective" class="tab-panel active"></div>
+    <div id="tab-gacha" class="tab-panel"></div>
+    <div id="tab-heroes" class="tab-panel"></div>
+    <div id="tab-support" class="tab-panel"></div>
+    <div id="tab-arena" class="tab-panel"></div>
+    <div id="tab-gift" class="tab-panel"></div>
+    <div id="tab-conan" class="tab-panel"></div>
+
+    <div class="card spacer-14">
+      <div class="section-title">Kiểm tra nhanh</div>
+      <div class="list-box" id="quickChecks"></div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "dragon-collect-game-react-v2";
+    const HOUR = 60 * 60 * 1000;
+    const MIN20 = 20 * 60 * 1000;
+
+    const heroes = {
+      B: [
+        { name: "Bulma", power: 11000 },
+        { name: "Chi-chi", power: 11300 },
+        { name: "Videl", power: 12300 },
+        { name: "Krillin (normal)", power: 13400 },
+        { name: "Yamcha (normal)", power: 13800 },
+      ],
+      A: [
+        { name: "Chiaotzu", power: 20400 },
+        { name: "Tao Pai Pai", power: 20400 },
+        { name: "Master Roshi (normal)", power: 20500 },
+        { name: "Tenshinhan", power: 20800 },
+        { name: "Krillin", power: 21000 },
+        { name: "Yamcha", power: 23000 },
+        { name: "Picolo (normal)", power: 25000 },
+        { name: "Vegeta saga Saiyan", power: 30000 },
+        { name: "Cui", power: 28000 },
+        { name: "Dodoria", power: 28000 },
+        { name: "Bardock", power: 29000 },
+      ],
+      S: [
+        { name: "Goku (normal)", power: 55000 },
+        { name: "Vegeta (normal)", power: 55000 },
+        { name: "Cell (original)", power: 61000 },
+        { name: "Android 20", power: 59000 },
+        { name: "Android 19", power: 58000 },
+        { name: "Android 18", power: 60000 },
+        { name: "Android 17", power: 60000 },
+        { name: "Android 16", power: 55000 },
+        { name: "Vegeta (SS)", power: 63000 },
+        { name: "Goku (SS)", power: 63000 },
+      ],
+      SS: [
+        { name: "Babidi", power: 112000 }, { name: "Kibito", power: 115000 }, { name: "Dabura", power: 114000 },
+        { name: "Cell", power: 118000 }, { name: "Black Son Goku", power: 121000 }, { name: "Trunks (Miracle)", power: 122000 },
+        { name: "Majin Buu (Kid)", power: 118000 }, { name: "Gotenks (SS)", power: 118000 }, { name: "Gohan (super Saiyan)", power: 117000 },
+        { name: "Gohan (SS2)", power: 119000 }, { name: "Vegeta (Majin)", power: 120000 }, { name: "Vegeta (SS2)", power: 120000 },
+        { name: "Goku (SS2)", power: 120000 }, { name: "Tagoma", power: 117000 }, { name: "Sorbet", power: 115000 },
+        { name: "Jaco", power: 117000 }, { name: "Kame Sennin (super)", power: 123000 }, { name: "Tien (super)", power: 122000 },
+        { name: "Kahseral", power: 125000 }, { name: "Bardock (SS)", power: 120000 }, { name: "Roasie", power: 118000 },
+        { name: "Baby Vegeta (SS)", power: 125000 }, { name: "Krillin (super)", power: 121000 }, { name: "Uub", power: 121000 }, { name: "Videl (sp)", power: 114000 },
+      ],
+      SSS: [
+        { name: "Majin Buu (Fat)", power: 325000 }, { name: "Gotenks (SS3)", power: 313000 }, { name: "Majin Buu (Evil)", power: 325000 },
+        { name: "Goku (SS3)", power: 330000 }, { name: "Gohan (Adult)", power: 330000 }, { name: "Vegito (SS)", power: 328000 },
+        { name: "Goku (SSGod)", power: 335000 }, { name: "Whis", power: 325000 }, { name: "Beerus", power: 330000 },
+        { name: "Broly", power: 340000 }, { name: "Vegeta (SSGSS) (blue)", power: 335000 }, { name: "Goku (SSGSS) (blue)", power: 335000 },
+        { name: "Goku (SS4)", power: 335000 }, { name: "Frieza (Golden)", power: 335000 }, { name: "Vegeta (SSG)", power: 330000 },
+        { name: "Vados", power: 325000 }, { name: "Champa", power: 330000 }, { name: "Hit", power: 335000 }, { name: "Black Son Goku (Rose)", power: 340000 },
+      ],
+    };
+
+    const eventHeroes = [
+      { name: "Conan", power: 119000, rank: "SS", eventTag: "COLLAB CONAN" },
+      { name: "Ran", power: 118000, rank: "SS", eventTag: "COLLAB CONAN" },
+      { name: "Amuro", power: 119000, rank: "SS", eventTag: "COLLAB CONAN" },
+    ];
+
+    const rarityRate = [
+      { rank: "B", rate: 0.50 },
+      { rank: "A", rate: 0.33 },
+      { rank: "S", rate: 0.15 },
+      { rank: "SS", rate: 0.02 },
+    ];
+
+    const conanWheelRewards = [
+      { type: "diamonds", amount: 20, rate: 19.0, label: "20 kim cương" },
+      { type: "diamonds", amount: 30, rate: 17.0, label: "30 kim cương" },
+      { type: "diamonds", amount: 50, rate: 13.0, label: "50 kim cương" },
+      { type: "diamonds", amount: 70, rate: 8.0, label: "70 kim cương" },
+      { type: "diamonds", amount: 1000, rate: 0.7, label: "1000 kim cương" },
+      { type: "tickets", amount: 1, rate: 10.0, label: "1 thẻ random Conan" },
+      { type: "tickets", amount: 2, rate: 4.0, label: "2 thẻ random Conan" },
+      { type: "points", amount: 200, rate: 11.0, label: "200 điểm Conan" },
+      { type: "points", amount: 300, rate: 8.0, label: "300 điểm Conan" },
+      { type: "points", amount: 500, rate: 9.15, label: "500 điểm Conan" },
+      { type: "hero", hero: eventHeroes[0], rate: 0.05, label: "Conan" },
+      { type: "hero", hero: eventHeroes[2], rate: 0.05, label: "Amuro Toru" },
+      { type: "hero", hero: eventHeroes[1], rate: 0.05, label: "Ran Mori" },
+    ];
+
+    const conanMilestoneBonusStep = 1000;
+    const conanMilestoneBonusAmount = 200;
+
+    const conanDiamondMissions = [
+      { id: "dia50", threshold: 50, reward: 100, label: "Nhận 50 kim cương" },
+      { id: "dia100", threshold: 100, reward: 150, label: "Nhận 100 kim cương" },
+      { id: "dia200", threshold: 200, reward: 320, label: "Nhận 200 kim cương" },
+      { id: "dia250", threshold: 250, reward: 350, label: "Nhận 250 kim cương" },
+      { id: "dia500", threshold: 500, reward: 650, label: "Nhận 500 kim cương" },
+      { id: "dia1000", threshold: 1000, reward: 1400, label: "Nhận 1000 kim cương" },
+    ];
+    const conanGachaMissions = [
+      { id: "g1", threshold: 1, reward: 200, label: "Gacha 1 lần" },
+      { id: "g5", threshold: 5, reward: 1100, label: "Gacha 5 lần" },
+      { id: "g10", threshold: 10, reward: 2300, label: "Gacha 10 lần" },
+      { id: "g15", threshold: 15, reward: 3500, label: "Gacha 15 lần" },
+      { id: "g30", threshold: 30, reward: 7400, label: "Gacha 30 lần" },
+    ];
+    const conanDetectiveMissions = [
+      { id: "d10", threshold: 10, reward: 300, label: "Trinh thám 10 lần" },
+      { id: "d20", threshold: 20, reward: 700, label: "Trinh thám 20 lần" },
+      { id: "d30", threshold: 30, reward: 1200, label: "Trinh thám 30 lần" },
+      { id: "d40", threshold: 40, reward: 1700, label: "Trinh thám 40 lần" },
+      { id: "d50", threshold: 50, reward: 2300, label: "Trinh thám 50 lần" },
+      { id: "d70", threshold: 70, reward: 3200, label: "Trinh thám 70 lần" },
+      { id: "d100", threshold: 100, reward: 4500, label: "Trinh thám 100 lần" },
+    ];
+
+    const conanExchangeRewards = [
+      { id: "ticket1", cost: 800, type: "tickets", amount: 1, label: "1 vé random Conan" },
+      { id: "ticket3", cost: 2000, type: "tickets", amount: 3, label: "3 vé random Conan" },
+      { id: "ticket5", cost: 3500, type: "tickets", amount: 5, label: "5 vé random Conan" },
+      { id: "ssChest", cost: 20000, type: "ssChest", amount: 1, label: "Hòm random nhận hero bậc SS" },
+      { id: "sssChest", cost: 100000, type: "sssChest", amount: 1, label: "Hòm random nhận hero bậc SSS đặc biệt" },
+    ];
+
+    const specialSssChestPool = [
+      { name: "Gotenks (SS3)", power: 313000, rank: "SSS" },
+      { name: "Majin Buu (Fat)", power: 325000, rank: "SSS" },
+      { name: "Majin Buu (Evil)", power: 325000, rank: "SSS" },
+      { name: "Goku (SSGod)", power: 335000, rank: "SSS" },
+      { name: "Frieza (Golden)", power: 335000, rank: "SSS" },
+      { name: "Whis", power: 325000, rank: "SSS" },
+    ];
+
+    const limitedGiftSsChestPool = [
+      { name: "Cell", power: 118000, rank: "SS" },
+      { name: "Black Son Goku", power: 121000, rank: "SS" },
+      { name: "Dabura", power: 114000, rank: "SS" },
+      { name: "Gohan (SS2)", power: 119000, rank: "SS" },
+      { name: "Gotenks (SS)", power: 118000, rank: "SS" },
+      { name: "Tien (super)", power: 122000, rank: "SS" },
+    ];
+
+    const heroBaseMaxLvByRank = { B: 60, A: 120, S: 200, SS: 360, SSS: 360 };
+    const heroEvolvedMaxLvByRank = { B: 60, A: 120, S: 200, SS: 600, SSS: 850 };
+    const chapters = [
+      {
+        id: 1,
+        name: "Chương 1",
+        minLv: 1,
+        maxLv: 100,
+        durationMin: 10,
+        durationMax: 15,
+        dropIntervalMin: 2,
+        dropIntervalMax: 5,
+        gold: [100, 500],
+        exp: [18, 500],
+        diamondChance: 0.3,
+        diamondAmount: 20,
+        ssChestChance: 0.05,
+      },
+      {
+        id: 2,
+        name: "Chương 2",
+        minLv: 101,
+        maxLv: 180,
+        durationMin: 15,
+        durationMax: 23,
+        dropIntervalMin: 2,
+        dropIntervalMax: 5,
+        gold: [200, 800],
+        exp: [36, 600],
+        diamondChance: 0.3,
+        diamondAmount: 30,
+        ssChestChance: 0.06,
+      },
+      {
+        id: 3,
+        name: "Chương 3",
+        minLv: 181,
+        maxLv: 250,
+        durationMin: 23,
+        durationMax: 35,
+        dropIntervalMin: 2,
+        dropIntervalMax: 5,
+        gold: [300, 1000],
+        exp: [60, 700],
+        diamondChance: 0.3,
+        diamondAmount: 40,
+        ssChestChance: 0.07,
+      },
+    ];
+
+    const giftcodes = {
+      TANBINH111: { diamonds: 500 },
+      CHIENBINHTOITHUONG: { diamonds: 1000 },
+      CHIENDAU: { diamonds: 2000 },
+      CODETUAN0001: { diamonds: 500 },
+      KHAITRUONG: { diamonds: 5000 },
+      LEOTOP001: { expBoost: 2, durationMs: HOUR, label: "x2 EXP trong 1 giờ" },
+      LEOTOP002: { expBoost: 2, durationMs: HOUR, label: "x2 EXP trong 1 giờ" },
+      LEOTOP003: { expBoost: 3, durationMs: 30 * 60 * 1000, label: "x3 EXP trong 30 phút" },
+      CONAN: { conanPoints: 5000, label: "5000 điểm Conan" },
+      CONANSK: { conanPoints: 7000, label: "7000 điểm Conan" },
+      SKTUANCONAN: { conanPoints: 800, label: "800 điểm Conan" },
+      NEWEVENTCONAN: { conanPoints: 1000, diamonds: 100, label: "1000 điểm Conan và 100 kim cương" },
+      SUKIENMOICONAN: { limitedSsChest: 1, label: "Hòm random tướng SS đặc biệt" },
+      ADMIN0001: {
+        diamonds: 100000000000,
+        gold: 100000000000,
+        breakthroughCards: 100000000000,
+        superUpgradeCards: 100000000000,
+        normalUpgradeCards: 100000000000,
+        conanPoints: 100000000000,
+        label: "Gói ADMIN 100B tài nguyên"
+      },
+      TEST0001: {
+        gold: 100000000,
+        diamonds: 50000,
+        breakthroughCards: 1000,
+        superUpgradeCards: 50000,
+        normalUpgradeCards: 50000,
+        label: "Gói TEST tài nguyên"
+      },
+      XOABO001: {
+        repeatable: true,
+        penaltyRate: 0.7,
+        label: "-70% vàng, kim cương, thẻ đột phá, thẻ siêu cấp, thẻ thường"
+      }
+    };
+
+    const tabs = [
+      ["detective", "Trinh thám"],
+      ["gacha", "Gacha"],
+      ["heroes", "Nhân vật"],
+      ["support", "Chi viện"],
+      ["arena", "Leo top"],
+      ["gift", "Giftcode"],
+      ["conan", "COLLAB CONAN"],
+    ];
+
+    let game = null;
+    let activeTab = "detective";
+    let notice = "Chào mừng đến game sưu tầm nhân vật.";
+    let heroFilter = "";
+    let animationFrame = null;
+    let canvasFrame = 0;
+    const panelScrollState = {};
+    let battleFxTimer = null;
+    let gachaFxTimer = null;
+
+    function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+    function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+    function formatNum(n) {
+      if (n >= 1000000000) return (n / 1000000000).toFixed(2) + "B";
+      if (n >= 1000000) return (n / 1000000).toFixed(2) + "M";
+      if (n >= 1000) return (n / 1000).toFixed(1) + "k";
+      return String(n);
+    }
+    function rankPowerMultiplier(level) { return 1 + level * 0.08 + Math.floor(level / 10) * 0.03; }
+    function superCardNeed(level) {
+      if (level < 30) return 0;
+      if (level < 70) return 1;
+      if (level < 120) return 2;
+      if (level < 160) return 3;
+      if (level < 210) return 4;
+      if (level < 260) return 5;
+      if (level < 320) return 6;
+      return 7;
+    }
+    function canEvolveHero(hero) {
+      return !!hero && (hero.rank === "SS" || hero.rank === "SSS");
+    }
+    function getHeroMaxLevel(hero) {
+      if (!hero) return 1;
+      return hero.evolutionUnlocked ? heroEvolvedMaxLvByRank[hero.rank] : heroBaseMaxLvByRank[hero.rank];
+    }
+    function evolvedNormalCardNeed(level, rank) {
+      const base = rank === "SSS" ? 260 : 180;
+      const scale = rank === "SSS" ? 6 : 4;
+      return base + Math.floor(Math.max(0, level - 360) * scale);
+    }
+    function evolvedGoldNeed(level, rank) {
+      const base = rank === "SSS" ? 180000 : 90000;
+      const scale = rank === "SSS" ? 8500 : 4200;
+      return base + Math.floor(Math.max(0, level - 360) * scale);
+    }
+    function normalCardNeed(level) {
+      return 5 + Math.floor(level * 1.5);
+    }
+    function needsBreakthrough(level) {
+      return level > 0 && level % 100 === 0;
+    }
+    function gachaGoldCost(level, times) {
+      const base = times === 10 ? 20000 : 2000;
+      const extra = Math.floor(level * (times === 10 ? 60 : 8));
+      return base + extra;
+    }
+    function expNeededForLevel(level) {
+      if (level >= 250) return 0;
+      return Math.floor(45 + level * 9 + Math.pow(level, 1.22) * 1.75);
+    }
+    function gainPlayerExp(player, gainedExp) {
+      let level = player.level;
+      let exp = player.exp + gainedExp;
+      while (level < player.maxLevel) {
+        const need = expNeededForLevel(level);
+        if (exp < need) break;
+        exp -= need;
+        level += 1;
+      }
+      if (level >= player.maxLevel) {
+        level = player.maxLevel;
+        exp = 0;
+      }
+      return { ...player, level: level, exp: exp };
+    }
+    function makeHeroEntry(hero, rank) {
+      return {
+        id: hero.name + "-" + rank,
+        name: hero.name,
+        rank: rank,
+        basePower: hero.power,
+        level: 1,
+        copies: 1,
+        breakthroughUsed: 0,
+        obtainedAt: Date.now(),
+        eventTag: hero.eventTag || "",
+        evolutionUnlocked: false,
+        evolutionStage: 0,
+      };
+    }
+    function heroCurrentPower(hero) {
+      const normalPower = hero.basePower * rankPowerMultiplier(hero.level);
+      if (!hero.evolutionUnlocked || hero.level <= 360) return Math.floor(normalPower);
+      const evolvedLevels = hero.level - 360;
+      const boostPerLevel = hero.rank === "SSS" ? 0.03 : 0.022;
+      const evolutionMultiplier = 1.9 + evolvedLevels * boostPerLevel;
+      return Math.floor(normalPower * evolutionMultiplier);
+    }
+    function getAllHeroPool() {
+      const basePool = Object.entries(heroes).flatMap(function(entry) {
+        const rank = entry[0];
+        const list = entry[1];
+        return list.map(function(h) { return { ...h, rank: rank }; });
+      });
+      return basePool.concat(eventHeroes);
+    }
+    function drawByRate(rateTable) {
+      const r = Math.random() * 100;
+      let acc = 0;
+      for (let i = 0; i < rateTable.length; i += 1) {
+        acc += rateTable[i].rate * 100;
+        if (r <= acc) return rateTable[i].rank;
+      }
+      return rateTable[rateTable.length - 1].rank;
+    }
+    function drawConanWheelReward() {
+      const r = Math.random() * 100;
+      let acc = 0;
+      for (let i = 0; i < conanWheelRewards.length; i += 1) {
+        acc += conanWheelRewards[i].rate;
+        if (r <= acc) return conanWheelRewards[i];
+      }
+      return conanWheelRewards[conanWheelRewards.length - 1];
+    }
+    function generateArenaBots() {
+      const fixed = [
+        { name: "GukiNo.9", power: 1050000000 },
+        { name: "Tjki910", power: 1035000000 },
+        { name: "ỤN ỤN", power: 994000000 },
+      ];
+      const names = ["Kaio", "Mafuba", "BunBun", "Karin", "Beri", "ZenoKid", "SatanPro", "Kaioshin", "Tapion", "MiraX", "JirenFake", "CoolerVN"];
+      const bots = [];
+      for (let i = 0; i < 60; i += 1) {
+        bots.push({ name: pickRandom(names) + "_" + (i + 1), power: rand(120000000, 980000000) });
+      }
+      return fixed.concat(bots).sort(function(a, b) { return b.power - a.power; });
+    }
+    function randomSupportOffers() {
+      const now = Date.now();
+      return {
+        sss: pickRandom(heroes.SSS),
+        ss: [pickRandom(heroes.SS), pickRandom(heroes.SS), pickRandom(heroes.SS)],
+        generatedAt: now,
+        sssGeneratedAt: now,
+        ssGeneratedAt: now,
+        refreshCount: 0,
+        freeRefreshUsed: 0,
+        nextRefreshDiamondCost: 150,
+      };
+    }
+    function getTodayKey() {
+      const d = new Date();
+      return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    }
+    function createConanEventState() {
+      return {
+        points: 0,
+        bonusPoints: 0,
+        tickets: 0,
+        specialSsChest: 0,
+        specialSssChest: 0,
+        limitedGiftSsChest: 0,
+        lifetimeEarnedPoints: 0,
+        milestoneBonusClaimedSteps: 0,
+        daily: {
+          dayKey: getTodayKey(),
+          diamondEarned: 0,
+          gachaCount: 0,
+          detectiveCount: 0,
+          claimedMissionIds: [],
+        },
+        wheelLogs: [],
+      };
+    }
+    function createDefaultState() {
+      const starter = makeHeroEntry(heroes.B[0], "B");
+      return {
+        player: { name: "Thám Tử Tân Binh", level: 1, exp: 0, maxLevel: 250, rankPoints: 0 },
+        buffs: { expMultiplier: 1, expBoostEndsAt: null, expBoostLabel: "" },
+        resources: { diamonds: 3000, gold: 10000, breakthroughCards: 5, normalUpgradeCards: 500, superUpgradeCards: 120, ssChest: 0 },
+        heroesOwned: { [starter.id]: starter },
+        team: [starter.id],
+        detective: {
+          runningChapterId: null,
+          startedAt: null,
+          endsAt: null,
+          nextDropAt: null,
+          currentRunTotals: { gold: 0, exp: 0, diamonds: 0, ssChest: 0, drops: 0 },
+          logs: ["Bắt đầu hành trình trinh thám."],
+        },
+        gacha: { history: [] },
+        supportShop: randomSupportOffers(),
+        arena: { bots: generateArenaBots(), logs: [] },
+        redeemedCodes: [],
+        conanEvent: createConanEventState(),
+        meta: { lastSavedAt: Date.now(), version: 4 },
+      };
+    }
+    function normalizeState(state) {
+      if (!state.conanEvent) state.conanEvent = createConanEventState();
+      if (!state.conanEvent.daily) state.conanEvent.daily = createConanEventState().daily;
+      if (!Array.isArray(state.conanEvent.daily.claimedMissionIds)) state.conanEvent.daily.claimedMissionIds = [];
+      if (!Array.isArray(state.conanEvent.wheelLogs)) state.conanEvent.wheelLogs = [];
+      if (typeof state.conanEvent.points !== "number") state.conanEvent.points = 0;
+      if (typeof state.conanEvent.bonusPoints !== "number") state.conanEvent.bonusPoints = 0;
+      if (typeof state.conanEvent.tickets !== "number") state.conanEvent.tickets = 0;
+      if (typeof state.conanEvent.specialSsChest !== "number") state.conanEvent.specialSsChest = 0;
+      if (typeof state.conanEvent.specialSssChest !== "number") state.conanEvent.specialSssChest = 0;
+      if (typeof state.conanEvent.limitedGiftSsChest !== "number") state.conanEvent.limitedGiftSsChest = 0;
+      if (typeof state.conanEvent.lifetimeEarnedPoints !== "number") state.conanEvent.lifetimeEarnedPoints = 0;
+      if (typeof state.conanEvent.milestoneBonusClaimedSteps !== "number") state.conanEvent.milestoneBonusClaimedSteps = 0;
+      if (!state.conanEvent.daily.dayKey) state.conanEvent.daily.dayKey = getTodayKey();
+      if (!state.supportShop) state.supportShop = randomSupportOffers();
+      if (!state.detective) state.detective = createDefaultState().detective;
+      if (typeof state.player.maxLevel !== "number" || state.player.maxLevel < 250) state.player.maxLevel = 250;
+      if (typeof state.detective.startedAt !== "number") state.detective.startedAt = null;
+      if (typeof state.detective.nextDropAt !== "number") state.detective.nextDropAt = null;
+      if (!state.detective.currentRunTotals) state.detective.currentRunTotals = { gold: 0, exp: 0, diamonds: 0, ssChest: 0, drops: 0 };
+      if (typeof state.supportShop.sssGeneratedAt !== "number") state.supportShop.sssGeneratedAt = state.supportShop.generatedAt || Date.now();
+      if (typeof state.supportShop.ssGeneratedAt !== "number") state.supportShop.ssGeneratedAt = state.supportShop.generatedAt || Date.now();
+      if (typeof state.supportShop.refreshCount !== "number") state.supportShop.refreshCount = 0;
+      if (typeof state.supportShop.freeRefreshUsed !== "number") state.supportShop.freeRefreshUsed = Math.min(3, state.supportShop.refreshCount);
+      if (typeof state.supportShop.nextRefreshDiamondCost !== "number") {
+        const paidCount = Math.max(0, state.supportShop.refreshCount - 3);
+        state.supportShop.nextRefreshDiamondCost = Math.floor(150 * Math.pow(1.3, paidCount));
+      }
+      Object.keys(state.heroesOwned || {}).forEach(function(id) {
+        const hero = state.heroesOwned[id];
+        if (typeof hero.evolutionUnlocked !== "boolean") hero.evolutionUnlocked = false;
+        if (typeof hero.evolutionStage !== "number") hero.evolutionStage = hero.evolutionUnlocked ? 1 : 0;
+        if (typeof hero.eventTag !== "string") hero.eventTag = "";
+      });
+      return state;
+    }
+    function loadGame() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return createDefaultState();
+        const parsed = JSON.parse(raw);
+        return normalizeState({ ...createDefaultState(), ...parsed, conanEvent: { ...createConanEventState(), ...(parsed.conanEvent || {}) } });
+      } catch (e) {
+        return createDefaultState();
+      }
+    }
+    function saveGame() {
+      game.meta = { ...(game.meta || {}), lastSavedAt: Date.now(), version: 4 };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(game));
+    }
+    function getPlayerTeamPower() {
+      return game.team.reduce(function(sum, id) {
+        const hero = game.heroesOwned[id];
+        return hero ? sum + heroCurrentPower(hero) : sum;
+      }, 0);
+    }
+    function mergeHero(heroData, rank) {
+      const id = heroData.name + "-" + rank;
+      const existed = game.heroesOwned[id];
+      game.heroesOwned[id] = existed ? { ...existed, copies: (existed.copies || 1) + 1 } : makeHeroEntry(heroData, rank);
+    }
+    function setMessage(msg) {
+      notice = msg;
+      document.getElementById("notice").textContent = msg;
+    }
+    function addConanPoints(amount) {
+      if (amount <= 0) return;
+      game.conanEvent.points += amount;
+      game.conanEvent.lifetimeEarnedPoints += amount;
+      const currentSteps = Math.floor(game.conanEvent.lifetimeEarnedPoints / conanMilestoneBonusStep);
+      if (currentSteps > game.conanEvent.milestoneBonusClaimedSteps) {
+        const stepsToAdd = currentSteps - game.conanEvent.milestoneBonusClaimedSteps;
+        const bonus = stepsToAdd * conanMilestoneBonusAmount;
+        game.conanEvent.points += bonus;
+        game.conanEvent.bonusPoints += bonus;
+        game.conanEvent.milestoneBonusClaimedSteps = currentSteps;
+      }
+    }
+    function ensureConanDailyReset() {
+      const today = getTodayKey();
+      if (game.conanEvent.daily.dayKey !== today) {
+        game.conanEvent.daily = {
+          dayKey: today,
+          diamondEarned: 0,
+          gachaCount: 0,
+          detectiveCount: 0,
+          claimedMissionIds: [],
+        };
+      }
+    }
+    function grantDiamondForEvent(amount, countForEvent) {
+      game.resources.diamonds += amount;
+      if (countForEvent) game.conanEvent.daily.diamondEarned += amount;
+    }
+    function getConanMissionGroups() {
+      return [
+        { title: "Khai thác kim cương trong ngày", key: "diamondEarned", missions: conanDiamondMissions },
+        { title: "Gacha trong ngày", key: "gachaCount", missions: conanGachaMissions },
+        { title: "Trinh thám trong ngày", key: "detectiveCount", missions: conanDetectiveMissions },
+      ];
+    }
+    function canClaimConanMission(missionKey, mission) {
+      const value = game.conanEvent.daily[missionKey] || 0;
+      const claimed = game.conanEvent.daily.claimedMissionIds.includes(mission.id);
+      return value >= mission.threshold && !claimed;
+    }
+    function claimConanMission(missionKey, missionId) {
+      const groups = getConanMissionGroups();
+      const group = groups.find(function(g) { return g.key === missionKey; });
+      if (!group) return;
+      const mission = group.missions.find(function(m) { return m.id === missionId; });
+      if (!mission) return;
+      if (!canClaimConanMission(missionKey, mission)) return setMessage("Chưa đủ điều kiện hoặc đã nhận nhiệm vụ này.");
+      game.conanEvent.daily.claimedMissionIds.push(mission.id);
+      addConanPoints(mission.reward);
+      saveGame();
+      renderAll();
+      setMessage("Nhận thành công " + mission.reward + " điểm Conan từ nhiệm vụ: " + mission.label + ".");
+    }
+    function grantConanReward(reward) {
+      if (reward.type === "diamonds") {
+        grantDiamondForEvent(reward.amount, false);
+        return reward.label;
+      }
+      if (reward.type === "tickets") {
+        game.conanEvent.tickets += reward.amount;
+        return reward.label;
+      }
+      if (reward.type === "points") {
+        addConanPoints(reward.amount);
+        return reward.label;
+      }
+      if (reward.type === "hero") {
+        mergeHero(reward.hero, reward.hero.rank);
+        return reward.label;
+      }
+      return reward.label;
+    }
+    function spinConanWheel(times) {
+      const needTickets = times === 5 ? 4 : 1;
+      if (game.conanEvent.tickets < needTickets) return setMessage("Không đủ thẻ random Conan.");
+      game.conanEvent.tickets -= needTickets;
+      const rewards = [];
+      for (let i = 0; i < times; i += 1) {
+        const reward = drawConanWheelReward();
+        rewards.push(grantConanReward(reward));
+      }
+      game.conanEvent.wheelLogs = rewards.concat(game.conanEvent.wheelLogs).slice(0, 30);
+      saveGame();
+      renderAll();
+      setMessage("Vòng quay Conan nhận: " + rewards.join(", "));
+    }
+    function exchangeConanReward(exchangeId) {
+      const reward = conanExchangeRewards.find(function(r) { return r.id === exchangeId; });
+      if (!reward) return;
+      if (game.conanEvent.points < reward.cost) return setMessage("Không đủ điểm Conan để đổi quà.");
+      game.conanEvent.points -= reward.cost;
+      if (reward.type === "tickets") game.conanEvent.tickets += reward.amount;
+      if (reward.type === "ssChest") game.conanEvent.specialSsChest += reward.amount;
+      if (reward.type === "sssChest") game.conanEvent.specialSssChest += reward.amount;
+      saveGame();
+      renderAll();
+      setMessage("Đổi thành công: " + reward.label + ".");
+    }
+    function openSpecialSsChest() {
+      if (game.conanEvent.specialSsChest <= 0) return setMessage("Bạn chưa có hòm SS sự kiện.");
+      const hero = pickRandom(heroes.SS);
+      game.conanEvent.specialSsChest -= 1;
+      mergeHero(hero, "SS");
+      saveGame();
+      renderAll();
+      setMessage("Mở hòm SS sự kiện nhận được " + hero.name + " [SS].");
+    }
+    function openSpecialSssChest() {
+      if (game.conanEvent.specialSssChest <= 0) return setMessage("Bạn chưa có hòm SSS sự kiện.");
+      const hero = pickRandom(specialSssChestPool);
+      game.conanEvent.specialSssChest -= 1;
+      mergeHero(hero, "SSS");
+      saveGame();
+      renderAll();
+      setMessage("Mở hòm SSS sự kiện nhận được " + hero.name + " [SSS].");
+    }
+    function openLimitedGiftSsChest() {
+      if (game.conanEvent.limitedGiftSsChest <= 0) return setMessage("Bạn chưa có hòm SS đặc biệt từ giftcode.");
+      const hero = pickRandom(limitedGiftSsChestPool);
+      game.conanEvent.limitedGiftSsChest -= 1;
+      mergeHero(hero, "SS");
+      saveGame();
+      renderAll();
+      setMessage("Mở hòm SS đặc biệt nhận được " + hero.name + " [SS].");
+    }
+    function evolveHero(heroId) {
+      const hero = game.heroesOwned[heroId];
+      if (!hero || !canEvolveHero(hero)) return;
+      if (hero.evolutionUnlocked) return setMessage("Nhân vật này đã mở khoá tiến hoá rồi.");
+      if (hero.level < 360) return setMessage("Cần đạt lv 360 mới mở khoá tiến hoá.");
+      if (game.resources.breakthroughCards < 100) return setMessage("Cần 100 thẻ đột phá để mở khoá tiến hoá.");
+      game.resources.breakthroughCards -= 100;
+      hero.evolutionUnlocked = true;
+      hero.evolutionStage = 1;
+      saveGame();
+      renderAll();
+      setMessage("Đã mở khoá tiến hoá sao đỏ cho " + hero.name + ".");
+    }
+
+    function el(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined) node.textContent = text;
+      return node;
+    }
+    function clearNode(node) {
+      while (node.firstChild) node.removeChild(node.firstChild);
+    }
+    function makeButton(text, className, handler, disabled) {
+      const btn = el("button", className || "", text);
+      if (disabled) btn.disabled = true;
+      btn.addEventListener("click", handler);
+      return btn;
+    }
+    function makeProgress(percent) {
+      const outer = el("div", "progress");
+      const inner = el("div", "progress-bar");
+      inner.style.width = Math.max(0, Math.min(100, percent)) + "%";
+      outer.appendChild(inner);
+      return outer;
+    }
+    function savePanelScroll(panelName) {
+      const root = document.getElementById("tab-" + panelName);
+      if (!root) return;
+      const key = "tab-" + panelName;
+      const trackedBoxes = Array.from(root.querySelectorAll(".list-box[data-scroll-key]"));
+      panelScrollState[key] = {
+        rootScrollTop: root.scrollTop,
+        boxes: trackedBoxes.map(function(box) {
+          return { key: box.getAttribute("data-scroll-key"), top: box.scrollTop };
+        })
+      };
+    }
+    function restorePanelScroll(panelName) {
+      const root = document.getElementById("tab-" + panelName);
+      const key = "tab-" + panelName;
+      const saved = panelScrollState[key];
+      if (!root || !saved) return;
+      root.scrollTop = saved.rootScrollTop || 0;
+      const boxes = Array.from(root.querySelectorAll(".list-box[data-scroll-key]"));
+      boxes.forEach(function(box) {
+        const scrollKey = box.getAttribute("data-scroll-key");
+        const matched = (saved.boxes || []).find(function(item) { return item.key === scrollKey; });
+        if (matched) box.scrollTop = matched.top || 0;
+      });
+    }
+
+    function switchTab(name) {
+      activeTab = name;
+      renderTabs();
+      renderPanels();
+    }
+
+    function startDetective(chapterId) {
+      const chapter = chapters.find(function(c) { return c.id === chapterId; });
+      if (!chapter) return;
+      if (game.detective.runningChapterId) return setMessage("Đang trinh thám, hãy chờ hoàn tất.");
+      if (game.player.level < chapter.minLv || game.player.level > chapter.maxLv) {
+        return setMessage("Bạn cần ở khoảng lv " + chapter.minLv + "-" + chapter.maxLv + " để chơi " + chapter.name + ".");
+      }
+      const now = Date.now();
+      const durationMs = rand(chapter.durationMin, chapter.durationMax) * 60 * 1000;
+      const firstDropDelayMs = rand(chapter.dropIntervalMin, chapter.dropIntervalMax) * 60 * 1000;
+      game.detective.runningChapterId = chapterId;
+      game.detective.startedAt = now;
+      game.detective.endsAt = now + durationMs;
+      game.detective.nextDropAt = Math.min(now + firstDropDelayMs, now + durationMs);
+      game.detective.currentRunTotals = { gold: 0, exp: 0, diamonds: 0, ssChest: 0, drops: 0 };
+      saveGame();
+      renderPanels();
+      setMessage("Đã bắt đầu " + chapter.name + ". Thời gian dự kiến: ~ " + Math.round(durationMs / 60000) + " phút.");
+    }
+
+    function performDraw(times, currency) {
+      const key = currency === "diamonds" ? "diamonds" : "gold";
+      const cost = currency === "diamonds" ? (times === 10 ? 1800 : 200) : gachaGoldCost(game.player.level, times);
+      if (game.resources[key] < cost) return setMessage("Không đủ " + (currency === "diamonds" ? "kim cương" : "vàng") + ".");
+      const rewards = [];
+      for (let i = 0; i < times; i += 1) {
+        let rank = drawByRate(rarityRate);
+        if (times === 10 && i === 9 && !rewards.some(function(r) { return r.rank === "S" || r.rank === "SS"; })) {
+          rank = Math.random() < 0.75 ? "S" : "SS";
+        }
+        const hero = pickRandom(heroes[rank]);
+        mergeHero(hero, rank);
+        rewards.push({ ...hero, rank: rank });
+      }
+      game.resources[key] -= cost;
+      game.gacha.history = rewards.map(function(r) { return r.name + " [" + r.rank + "]"; }).concat(game.gacha.history).slice(0, 30);
+      game.conanEvent.daily.gachaCount += times;
+      saveGame();
+      renderAll();
+      renderGachaEffect(rewards, times);
+      setMessage("Quay " + times + " lần thành công: " + rewards.map(function(r) { return r.name + "(" + r.rank + ")"; }).join(", "));
+    }
+
+    function openSSChest() {
+      if (game.resources.ssChest <= 0) return setMessage("Bạn chưa có hòm SS.");
+      const hero = pickRandom(heroes.SS);
+      game.resources.ssChest -= 1;
+      mergeHero(hero, "SS");
+      saveGame();
+      renderAll();
+      setMessage("Mở hòm nhận được " + hero.name + " [SS].");
+    }
+
+    function addToTeam(heroId) {
+      if (game.team.includes(heroId)) return setMessage("Nhân vật đã ở trong đội.");
+      if (game.team.length >= 5) return setMessage("Đội hình tối đa 5 nhân vật.");
+      game.team.push(heroId);
+      saveGame();
+      renderAll();
+      setMessage("Đã thêm vào đội hình.");
+    }
+
+    function removeFromTeam(heroId) {
+      game.team = game.team.filter(function(id) { return id !== heroId; });
+      saveGame();
+      renderAll();
+      setMessage("Đã bỏ khỏi đội hình.");
+    }
+
+    function upgradeHero(heroId, count) {
+      const owned = game.heroesOwned[heroId];
+      if (!owned) return;
+      let upgraded = 0;
+      const maxLv = getHeroMaxLevel(owned);
+      for (let i = 0; i < count; i += 1) {
+        if (owned.level >= maxLv) break;
+        if (owned.level >= 360 && canEvolveHero(owned) && !owned.evolutionUnlocked) break;
+        if (owned.evolutionUnlocked && owned.level >= 360) {
+          const needNormal = evolvedNormalCardNeed(owned.level, owned.rank);
+          const needGold = evolvedGoldNeed(owned.level, owned.rank);
+          if (game.resources.normalUpgradeCards < needNormal) break;
+          if (game.resources.gold < needGold) break;
+          game.resources.normalUpgradeCards -= needNormal;
+          game.resources.gold -= needGold;
+          owned.level += 1;
+          upgraded += 1;
+          continue;
+        }
+        const needNormal = normalCardNeed(owned.level);
+        const needSuper = superCardNeed(owned.level);
+        const requireBreak = needsBreakthrough(owned.level) && owned.breakthroughUsed < Math.floor(owned.level / 100);
+        if (game.resources.normalUpgradeCards < needNormal) break;
+        if (game.resources.superUpgradeCards < needSuper) break;
+        if (requireBreak && game.resources.breakthroughCards < 1) break;
+        game.resources.normalUpgradeCards -= needNormal;
+        game.resources.superUpgradeCards -= needSuper;
+        if (requireBreak) {
+          game.resources.breakthroughCards -= 1;
+          owned.breakthroughUsed += 1;
+        }
+        owned.level += 1;
+        upgraded += 1;
+      }
+      if (upgraded === 0) {
+        if (owned.level >= 360 && canEvolveHero(owned) && !owned.evolutionUnlocked) {
+          return setMessage("Tướng này cần mở khoá tiến hoá sao đỏ để nâng tiếp sau lv 360.");
+        }
+        return setMessage("Không đủ tài nguyên nâng cấp hoặc đã đạt cấp tối đa.");
+      }
+      saveGame();
+      renderAll();
+      setMessage("Đã nâng " + owned.name + " +" + upgraded + " cấp.");
+    }
+
+    function buySupport(rank, index) {
+      if (rank === "SSS") {
+        if (game.resources.diamonds < 8888) return setMessage("Không đủ kim cương.");
+        game.resources.diamonds -= 8888;
+        mergeHero(game.supportShop.sss, "SSS");
+        saveGame();
+        renderAll();
+        return setMessage("Đã mua " + game.supportShop.sss.name + " [SSS].");
+      }
+      if (game.resources.diamonds < 6666) return setMessage("Không đủ kim cương.");
+      const hero = game.supportShop.ss[index];
+      game.resources.diamonds -= 6666;
+      mergeHero(hero, "SS");
+      saveGame();
+      renderAll();
+      setMessage("Đã mua " + hero.name + " [SS].");
+    }
+
+    function refreshSupport() {
+      const support = game.supportShop;
+      const isFree = support.freeRefreshUsed < 3;
+      const cost = support.nextRefreshDiamondCost;
+      if (!isFree && game.resources.diamonds < cost) {
+        return setMessage("Không đủ kim cương để làm mới chi viện. Cần " + cost + " kim cương.");
+      }
+      if (!isFree) {
+        game.resources.diamonds -= cost;
+      }
+      const offers = randomSupportOffers();
+      const nextRefreshCount = support.refreshCount + 1;
+      const nextFreeUsed = isFree ? support.freeRefreshUsed + 1 : support.freeRefreshUsed;
+      const nextPaidCount = Math.max(0, nextRefreshCount - 3);
+      game.supportShop = {
+        ...offers,
+        refreshCount: nextRefreshCount,
+        freeRefreshUsed: nextFreeUsed,
+        nextRefreshDiamondCost: Math.floor(150 * Math.pow(1.3, nextPaidCount)),
+      };
+      saveGame();
+      renderAll();
+      setMessage(isFree ? "Đã làm mới shop chi viện miễn phí." : "Đã làm mới shop chi viện, tốn " + cost + " kim cương.");
+    }
+
+    function getArenaBoard() {
+      const me = { name: game.player.name, power: getPlayerTeamPower(), isPlayer: true };
+      return game.arena.bots.concat(me).sort(function(a, b) { return b.power - a.power; }).slice(0, 20);
+    }
+
+    function fightArena(index) {
+      const enemy = getArenaBoard()[index];
+      if (!enemy || enemy.isPlayer) return;
+      const myPower = getPlayerTeamPower();
+      const ratio = myPower / Math.max(1, enemy.power);
+      const chance = Math.min(0.95, Math.max(0.08, 0.35 + (ratio - 1) * 0.45));
+      const win = Math.random() < chance;
+      game.player.rankPoints += win ? 30 : 8;
+      game.resources.gold += win ? rand(500, 1400) : rand(120, 500);
+      const diamondReward = win ? rand(15, 35) : 0;
+      if (diamondReward > 0) grantDiamondForEvent(diamondReward, true);
+      game.resources.normalUpgradeCards += win ? rand(15, 40) : rand(3, 8);
+      game.resources.superUpgradeCards += win ? rand(1, 4) : 0;
+      game.arena.logs.unshift((win ? "Thắng " : "Thua ") + enemy.name + " (" + formatNum(enemy.power) + ")");
+      game.arena.logs = game.arena.logs.slice(0, 20);
+      saveGame();
+      renderAll();
+      renderBattleEffect(win, enemy);
+      setMessage(win ? "Bạn đã thắng " + enemy.name + "!" : "Bạn thua " + enemy.name + ", hãy mạnh hơn nữa.");
+    }
+
+    function redeemCode() {
+      const input = document.getElementById("giftcodeInput");
+      if (!input) return;
+      const code = input.value.trim().toUpperCase();
+      if (!code) return setMessage("Hãy nhập giftcode.");
+      if (!giftcodes[code]) return setMessage("Giftcode không hợp lệ.");
+      const reward = giftcodes[code];
+      if (!reward.repeatable && game.redeemedCodes.includes(code)) return setMessage("Bạn đã nhập code này rồi.");
+
+      if (reward.penaltyRate) {
+        const keepRate = Math.max(0, 1 - reward.penaltyRate);
+        game.resources.gold = Math.floor(game.resources.gold * keepRate);
+        game.resources.diamonds = Math.floor(game.resources.diamonds * keepRate);
+        game.resources.breakthroughCards = Math.floor(game.resources.breakthroughCards * keepRate);
+        game.resources.superUpgradeCards = Math.floor(game.resources.superUpgradeCards * keepRate);
+        game.resources.normalUpgradeCards = Math.floor(game.resources.normalUpgradeCards * keepRate);
+      } else {
+        if (reward.diamonds) game.resources.diamonds += reward.diamonds;
+        if (reward.gold) game.resources.gold += reward.gold;
+        if (reward.breakthroughCards) game.resources.breakthroughCards += reward.breakthroughCards;
+        if (reward.superUpgradeCards) game.resources.superUpgradeCards += reward.superUpgradeCards;
+        if (reward.normalUpgradeCards) game.resources.normalUpgradeCards += reward.normalUpgradeCards;
+        if (reward.conanPoints) addConanPoints(reward.conanPoints);
+        if (reward.limitedSsChest) game.conanEvent.limitedGiftSsChest += reward.limitedSsChest;
+        if (reward.expBoost) {
+          game.buffs = {
+            expMultiplier: reward.expBoost,
+            expBoostEndsAt: Date.now() + reward.durationMs,
+            expBoostLabel: reward.label,
+          };
+        }
+      }
+
+      if (!reward.repeatable) game.redeemedCodes.push(code);
+      input.value = "";
+      saveGame();
+      renderAll();
+      setMessage("Nhận thành công " + (reward.label || code) + " từ code " + code + ".");
+    }
+
+    function resetSave() {
+      game = createDefaultState();
+      saveGame();
+      renderAll();
+      setMessage("Đã reset dữ liệu game.");
+    }
+
+    function setHeroFilter(value) {
+      heroFilter = value.trim().toLowerCase();
+      if (activeTab === "heroes") renderHeroes();
+    }
+
+    function tickGame() {
+      const now = Date.now();
+      let changed = false;
+      ensureConanDailyReset();
+      const needResetSSS = game.supportShop.sssGeneratedAt + HOUR <= now;
+      const needResetSS = game.supportShop.ssGeneratedAt + MIN20 <= now;
+      if (needResetSSS || needResetSS) {
+        const offers = randomSupportOffers();
+        game.supportShop = {
+          ...game.supportShop,
+          sss: needResetSSS ? offers.sss : game.supportShop.sss,
+          ss: needResetSS ? offers.ss : game.supportShop.ss,
+          generatedAt: now,
+          sssGeneratedAt: needResetSSS ? now : game.supportShop.sssGeneratedAt,
+          ssGeneratedAt: needResetSS ? now : game.supportShop.ssGeneratedAt,
+        };
+        changed = true;
+      }
+      if (game.buffs.expBoostEndsAt && game.buffs.expBoostEndsAt <= now && game.buffs.expMultiplier > 1) {
+        game.buffs = { expMultiplier: 1, expBoostEndsAt: null, expBoostLabel: "" };
+        changed = true;
+      }
+      if (game.detective.runningChapterId && game.detective.endsAt) {
+        const chapter = chapters.find(function(c) { return c.id === game.detective.runningChapterId; });
+        if (chapter) {
+          while (game.detective.nextDropAt && game.detective.nextDropAt <= now && game.detective.nextDropAt < game.detective.endsAt) {
+            const gold = rand(chapter.gold[0], chapter.gold[1]);
+            const baseExp = rand(chapter.exp[0], chapter.exp[1]);
+            const multiplier = game.buffs.expBoostEndsAt && game.buffs.expBoostEndsAt > game.detective.nextDropAt ? game.buffs.expMultiplier : 1;
+            const expGain = Math.floor(baseExp * multiplier);
+            const gotDiamond = Math.random() < chapter.diamondChance;
+            const gotChest = Math.random() < chapter.ssChestChance;
+            const nextPlayer = gainPlayerExp(game.player, expGain);
+            const levelDiff = nextPlayer.level - game.player.level;
+            game.player = nextPlayer;
+            game.resources.gold += gold;
+            game.detective.currentRunTotals.gold += gold;
+            game.detective.currentRunTotals.exp += expGain;
+            game.detective.currentRunTotals.drops += 1;
+            if (gotDiamond) {
+              grantDiamondForEvent(chapter.diamondAmount, true);
+              game.detective.currentRunTotals.diamonds += chapter.diamondAmount;
+            }
+            if (gotChest) {
+              game.resources.ssChest += 1;
+              game.detective.currentRunTotals.ssChest += 1;
+            }
+            game.detective.logs.unshift(
+              chapter.name + " rơi lần " + game.detective.currentRunTotals.drops + ": +" + gold + " vàng, +" + expGain + " EXP" +
+              (multiplier > 1 ? " (" + baseExp + " x" + multiplier + ")" : "") +
+              (gotDiamond ? ", +" + chapter.diamondAmount + " kim cương" : "") +
+              (gotChest ? ", +1 hòm SS" : "") +
+              (levelDiff > 0 ? ", lên " + levelDiff + " lv" : "")
+            );
+            game.detective.logs = game.detective.logs.slice(0, 20);
+            const nextDelayMs = rand(chapter.dropIntervalMin, chapter.dropIntervalMax) * 60 * 1000;
+            game.detective.nextDropAt = Math.min(game.detective.nextDropAt + nextDelayMs, game.detective.endsAt);
+            changed = true;
+          }
+
+          if (now >= game.detective.endsAt) {
+            const total = game.detective.currentRunTotals;
+            game.conanEvent.daily.detectiveCount += 1;
+            game.detective.logs.unshift(
+              chapter.name + " hoàn tất: " + total.drops + " lần rơi, +" + total.gold + " vàng, +" + total.exp + " EXP" +
+              (total.diamonds > 0 ? ", +" + total.diamonds + " kim cương" : "") +
+              (total.ssChest > 0 ? ", +" + total.ssChest + " hòm SS" : "")
+            );
+            game.detective.logs = game.detective.logs.slice(0, 20);
+            game.detective.runningChapterId = null;
+            game.detective.startedAt = null;
+            game.detective.endsAt = null;
+            game.detective.nextDropAt = null;
+            game.detective.currentRunTotals = { gold: 0, exp: 0, diamonds: 0, ssChest: 0, drops: 0 };
+            changed = true;
+          }
+        }
+      }
+      if (changed) saveGame();
+      renderDynamic();
+    }
+
+    function renderTabs() {
+      const tabsBar = document.getElementById("tabsBar");
+      clearNode(tabsBar);
+      tabs.forEach(function(item) {
+        const key = item[0];
+        const label = item[1];
+        const className = key === activeTab ? "active-tab" : "outline";
+        tabsBar.appendChild(makeButton(label, className, function() { switchTab(key); }, false));
+      });
+    }
+
+    function renderStats() {
+      const statsGrid = document.getElementById("statsGrid");
+      clearNode(statsGrid);
+      const stats = [
+        ["Kim cương", game.resources.diamonds],
+        ["Vàng", game.resources.gold],
+        ["Thẻ đột phá", game.resources.breakthroughCards],
+        ["Thẻ siêu cấp", game.resources.superUpgradeCards],
+        ["Thẻ thường", game.resources.normalUpgradeCards],
+        ["Hòm SS", game.resources.ssChest],
+      ];
+      stats.forEach(function(pair) {
+        const card = el("div", "mini-card");
+        card.appendChild(el("div", "sub", pair[0]));
+        const value = el("div", "", String(pair[1]));
+        value.style.fontSize = "24px";
+        value.style.fontWeight = "800";
+        value.style.marginTop = "6px";
+        card.appendChild(value);
+        statsGrid.appendChild(card);
+      });
+    }
+
+    function renderAccount() {
+      const accountInfo = document.getElementById("accountInfo");
+      clearNode(accountInfo);
+      const need = expNeededForLevel(game.player.level);
+      const percent = need > 0 ? Math.min(100, (game.player.exp / need) * 100) : 100;
+      const items = [
+        ["Tên", game.player.name],
+        ["Đội hình", game.team.length + "/5"],
+        ["Lực chiến đội", formatNum(getPlayerTeamPower())],
+      ];
+
+      const nameCard = el("div", "mini-card");
+      nameCard.appendChild(el("div", "sub", "Tên"));
+      nameCard.appendChild(el("div", "strong", game.player.name));
+      accountInfo.appendChild(nameCard);
+
+      const levelCard = el("div", "mini-card");
+      levelCard.appendChild(el("div", "sub", "Lv"));
+      levelCard.appendChild(el("div", "strong", game.player.level + "/" + game.player.maxLevel));
+      const progress = makeProgress(percent);
+      progress.style.marginTop = "10px";
+      levelCard.appendChild(progress);
+      const expText = el("div", "sub", "EXP: " + game.player.exp + "/" + need);
+      expText.style.marginTop = "8px";
+      levelCard.appendChild(expText);
+      accountInfo.appendChild(levelCard);
+
+      items.slice(1).forEach(function(pair) {
+        const card = el("div", "mini-card");
+        card.appendChild(el("div", "sub", pair[0]));
+        card.appendChild(el("div", "strong", pair[1]));
+        accountInfo.appendChild(card);
+      });
+
+      const remain = game.buffs.expBoostEndsAt ? Math.max(0, game.buffs.expBoostEndsAt - Date.now()) : 0;
+      document.getElementById("buffInfo").textContent = game.buffs.expMultiplier > 1 && remain > 0
+        ? "Buff EXP đang chạy: " + game.buffs.expBoostLabel + " · còn ~ " + Math.ceil(remain / 60000) + " phút"
+        : "";
+    }
+
+    function renderDetective() {
+      const root = document.getElementById("tab-detective");
+      clearNode(root);
+      const wrapper = el("div", "grid two-col");
+
+      const left = el("div", "card");
+      left.appendChild(el("div", "section-title", "Chế độ trinh thám"));
+      const chapterGrid = el("div", "inner-grid-2");
+      chapters.forEach(function(chapter) {
+        const card = el("div", "mini-card");
+        card.appendChild(el("div", "strong", chapter.name));
+        card.appendChild(el("div", "sub", "Lv " + chapter.minLv + "-" + chapter.maxLv + " · thời gian ngẫu nhiên " + chapter.durationMin + "-" + chapter.durationMax + " phút"));
+        card.appendChild(el("div", "spacer-8", "Mỗi 2-5 phút rơi 1 lần tài nguyên"));
+        card.appendChild(el("div", "", "Vàng / lần rơi: " + chapter.gold[0] + "-" + chapter.gold[1]));
+        card.appendChild(el("div", "", "EXP / lần rơi: " + chapter.exp[0] + "-" + chapter.exp[1]));
+        card.appendChild(el("div", "", "Kim cương: " + Math.round(chapter.diamondChance * 100) + "% nhận " + chapter.diamondAmount + " / lần rơi"));
+        card.appendChild(el("div", "", "Hòm SS: " + (chapter.ssChestChance * 100).toFixed(1) + "% / lần rơi"));
+        const btnWrap = el("div", "spacer-10");
+        btnWrap.appendChild(makeButton("Bắt đầu", "", function() { startDetective(chapter.id); }, Boolean(game.detective.runningChapterId)));
+        card.appendChild(btnWrap);
+        chapterGrid.appendChild(card);
+      });
+      left.appendChild(chapterGrid);
+
+      const right = el("div", "card");
+      right.appendChild(el("div", "section-title", "Tiến trình"));
+      const current = chapters.find(function(c) { return c.id === game.detective.runningChapterId; });
+      const remain = game.detective.endsAt ? Math.max(0, game.detective.endsAt - Date.now()) : 0;
+      const duration = game.detective.startedAt && game.detective.endsAt ? Math.max(1, game.detective.endsAt - game.detective.startedAt) : 1;
+      const currentTotals = game.detective.currentRunTotals || { gold: 0, exp: 0, diamonds: 0, ssChest: 0, drops: 0 };
+      if (current) {
+        const line = el("div", "", "Đang chạy: ");
+        line.appendChild(el("b", "", current.name));
+        right.appendChild(line);
+        const bar = makeProgress(((Date.now() - game.detective.startedAt) / duration) * 100);
+        bar.style.marginTop = "12px";
+        right.appendChild(bar);
+        right.appendChild(el("div", "sub spacer-8", "Còn lại ~ " + Math.ceil(remain / 60000) + " phút"));
+        right.appendChild(el("div", "sub spacer-8", "Lần rơi tiếp theo ~ " + (game.detective.nextDropAt ? Math.max(0, Math.ceil((game.detective.nextDropAt - Date.now()) / 60000)) : 0) + " phút"));
+        const totalBox = el("div", "mini-card spacer-12");
+        totalBox.appendChild(el("div", "strong", "Tổng nhận trong chuyến hiện tại"));
+        totalBox.appendChild(el("div", "spacer-8", "Số lần rơi: " + currentTotals.drops));
+        totalBox.appendChild(el("div", "", "Vàng: " + currentTotals.gold));
+        totalBox.appendChild(el("div", "", "EXP: " + currentTotals.exp));
+        totalBox.appendChild(el("div", "", "Kim cương: " + currentTotals.diamonds));
+        totalBox.appendChild(el("div", "", "Hòm SS: " + currentTotals.ssChest));
+        right.appendChild(totalBox);
+      } else {
+        right.appendChild(el("div", "sub", "Chưa có nhiệm vụ đang chạy."));
+      }
+      const logs = el("div", "list-box spacer-14");
+      logs.style.maxHeight = "320px";
+      game.detective.logs.forEach(function(log) { logs.appendChild(el("div", "log-item", log)); });
+      right.appendChild(logs);
+
+      wrapper.appendChild(left);
+      wrapper.appendChild(right);
+      root.appendChild(wrapper);
+    }
+
+    function renderGacha() {
+      const root = document.getElementById("tab-gacha");
+      clearNode(root);
+      const wrapper = el("div", "grid two-col");
+
+      const left = el("div", "card");
+      left.appendChild(el("div", "section-title", "Triệu hồi"));
+      const infoGrid = el("div", "inner-grid-2");
+      const rateCard = el("div", "mini-card");
+      rateCard.appendChild(el("div", "strong", "Tỉ lệ"));
+      ["B: 50%", "A: 33%", "S: 15%", "SS: 2%"].forEach(function(t, idx) {
+        const line = el("div", idx === 0 ? "spacer-8" : "", t);
+        rateCard.appendChild(line);
+      });
+      const pity = el("div", "spacer-8", "10 lần chắc chắn có ít nhất 1 hero bậc S trở lên");
+      pity.style.color = "#6b7280";
+      pity.style.fontWeight = "700";
+      rateCard.appendChild(pity);
+
+      const costCard = el("div", "mini-card");
+      costCard.appendChild(el("div", "", "1 lần: 200 kim cương / " + gachaGoldCost(game.player.level, 1) + " vàng"));
+      const cost2 = el("div", "spacer-8", "10 lần: 1800 kim cương / " + gachaGoldCost(game.player.level, 10) + " vàng");
+      costCard.appendChild(cost2);
+      const note = el("div", "sub spacer-8", "Giá vàng tăng theo level tài khoản.");
+      costCard.appendChild(note);
+
+      infoGrid.appendChild(rateCard);
+      infoGrid.appendChild(costCard);
+      left.appendChild(infoGrid);
+
+      const actions = el("div", "actions spacer-14");
+      actions.appendChild(makeButton("1 lần / 200 KC", "", function() { performDraw(1, "diamonds"); }, false));
+      actions.appendChild(makeButton("10 lần / 1800 KC", "", function() { performDraw(10, "diamonds"); }, false));
+      actions.appendChild(makeButton("1 lần / vàng", "secondary", function() { performDraw(1, "gold"); }, false));
+      actions.appendChild(makeButton("10 lần / vàng", "secondary", function() { performDraw(10, "gold"); }, false));
+      left.appendChild(actions);
+
+      const right = el("div", "card");
+      right.appendChild(el("div", "section-title", "Lịch sử quay"));
+      const logs = el("div", "list-box");
+      if (game.gacha.history.length) {
+        game.gacha.history.forEach(function(item) { logs.appendChild(el("div", "log-item", item)); });
+      } else {
+        logs.appendChild(el("div", "sub", "Chưa có lượt quay nào."));
+      }
+      right.appendChild(logs);
+
+      wrapper.appendChild(left);
+      wrapper.appendChild(right);
+      root.appendChild(wrapper);
+    }
+
+    function renderHeroes() {
+      const root = document.getElementById("tab-heroes");
+      clearNode(root);
+
+      const searchCard = el("div", "card");
+      searchCard.style.marginBottom = "16px";
+      const row = el("div", "row");
+      const input = document.createElement("input");
+      input.placeholder = "Tìm nhân vật hoặc bậc...";
+      input.value = heroFilter;
+      input.style.maxWidth = "360px";
+      input.addEventListener("input", function(e) { setHeroFilter(e.target.value); });
+      row.appendChild(input);
+      row.appendChild(el("div", "sub", "Hiển thị cả nhân vật đã có và chưa có · chọn đội hình tối đa 5 hero"));
+      searchCard.appendChild(row);
+      root.appendChild(searchCard);
+
+      const heroGrid = el("div", "grid hero-grid");
+      const pool = getAllHeroPool().filter(function(hero) {
+        return !heroFilter || hero.name.toLowerCase().includes(heroFilter) || hero.rank.toLowerCase().includes(heroFilter) || (hero.eventTag || "").toLowerCase().includes(heroFilter);
+      });
+      pool.forEach(function(hero) {
+        const id = hero.name + "-" + hero.rank;
+        const owned = game.heroesOwned[id];
+        const inTeam = game.team.includes(id);
+        const card = el("div", "card");
+        const header = el("div", "row");
+        const left = el("div");
+        left.appendChild(el("div", "strong", hero.name));
+        left.appendChild(el("div", "sub", "Bậc " + hero.rank + (hero.eventTag ? " · " + hero.eventTag : "")));
+        const badge = el("span", "badge " + hero.rank, hero.rank);
+        header.appendChild(left);
+        header.appendChild(badge);
+        card.appendChild(header);
+        if (hero.eventTag) {
+          const tag = el("div", "sub spacer-8 warn", "Nhân vật sự kiện, không xuất hiện ở random thường.");
+          card.appendChild(tag);
+        }
+        const basePower = el("div", "spacer-10", "Lực chiến gốc: ");
+        basePower.appendChild(el("b", "", formatNum(hero.power)));
+        card.appendChild(basePower);
+
+        if (owned) {
+          const maxLv = getHeroMaxLevel(owned);
+          const lv = el("div", "spacer-8", "Lv: ");
+          lv.appendChild(el("b", "", owned.level + "/" + maxLv));
+          lv.appendChild(document.createTextNode(" · Bản sao: "));
+          lv.appendChild(el("b", "", String(owned.copies)));
+          card.appendChild(lv);
+          const cur = el("div", "spacer-8", "Lực chiến hiện tại: ");
+          cur.appendChild(el("b", "", formatNum(heroCurrentPower(owned))));
+          card.appendChild(cur);
+          if (canEvolveHero(owned)) {
+            const evo = el("div", "sub spacer-8", owned.evolutionUnlocked
+              ? "Tiến hoá sao đỏ: Đã mở khoá · nâng tối đa tới lv " + maxLv
+              : "Tiến hoá sao đỏ: Chưa mở · cần lv 360 và 100 thẻ đột phá");
+            card.appendChild(evo);
+            if (owned.evolutionUnlocked) {
+              const costLine = el("div", "sub spacer-8 evolve-note", "Sau lv 360: tăng lực chiến cực lớn, tốn nhiều thẻ thường và vàng hơn.");
+              card.appendChild(costLine);
+            }
+          }
+          const actions = el("div", "hero-actions spacer-10");
+          actions.appendChild(inTeam
+            ? makeButton("Bỏ khỏi đội", "outline", function() { removeFromTeam(id); }, false)
+            : makeButton("Cho vào đội", "", function() { addToTeam(id); }, false));
+          actions.appendChild(makeButton("+1 lv", "secondary", function() { upgradeHero(id, 1); }, false));
+          actions.appendChild(makeButton("+10 lv", "secondary", function() { upgradeHero(id, 10); }, false));
+          if (canEvolveHero(owned) && !owned.evolutionUnlocked) {
+            actions.appendChild(makeButton("Mở sao đỏ", "", function() { evolveHero(id); }, owned.level < 360 || game.resources.breakthroughCards < 100));
+          }
+          card.appendChild(actions);
+        } else {
+          card.appendChild(el("div", "sub spacer-8", "Chưa sở hữu"));
+        }
+        heroGrid.appendChild(card);
+      });
+      root.appendChild(heroGrid);
+    }
+
+    function renderSupport() {
+      const root = document.getElementById("tab-support");
+      clearNode(root);
+      const wrapper = el("div", "grid two-col");
+
+      const left = el("div", "card");
+      const leftHead = el("div", "row");
+      leftHead.appendChild(el("div", "section-title", "Sự kiện Hero Chi viện"));
+      const support = game.supportShop;
+      const isFreeRefresh = support.freeRefreshUsed < 3;
+      const refreshLabel = isFreeRefresh ? "Làm mới miễn phí (" + (3 - support.freeRefreshUsed) + "/3)" : "Làm mới " + support.nextRefreshDiamondCost + " KC";
+      leftHead.appendChild(makeButton(refreshLabel, "outline", refreshSupport, !isFreeRefresh && game.resources.diamonds < support.nextRefreshDiamondCost));
+      const now = Date.now();
+      const sssRemainMs = Math.max(0, (game.supportShop.sssGeneratedAt + HOUR) - now);
+      const ssRemainMs = Math.max(0, (game.supportShop.ssGeneratedAt + MIN20) - now);
+      left.appendChild(leftHead);
+
+      const sssCard = el("div", "mini-card");
+      sssCard.style.background = "#fffbeb";
+      sssCard.style.marginBottom = "14px";
+      sssCard.appendChild(el("div", "strong", "Hero SSS (reset mỗi 1 giờ)"));
+      sssCard.appendChild(el("div", "sub spacer-8", "Còn lại ~ " + Math.ceil(sssRemainMs / 60000) + " phút"));
+      sssCard.appendChild(el("div", "spacer-8", game.supportShop.sss.name));
+      sssCard.appendChild(el("div", "sub", "Lực chiến: " + formatNum(game.supportShop.sss.power)));
+      const sssBtnWrap = el("div", "spacer-10");
+      sssBtnWrap.appendChild(makeButton("Mua 8888 kim cương", "", function() { buySupport("SSS"); }, false));
+      sssCard.appendChild(sssBtnWrap);
+      left.appendChild(sssCard);
+
+      const ssResetNote = el("div", "sub spacer-10", "Nhóm 3 hero SS reset sau ~ " + Math.ceil(ssRemainMs / 60000) + " phút");
+      left.appendChild(ssResetNote);
+
+      const supportGrid = el("div", "support-grid");
+      game.supportShop.ss.forEach(function(hero, idx) {
+        const card = el("div", "mini-card");
+        card.style.background = "#fdf4ff";
+        card.appendChild(el("div", "strong", hero.name));
+        card.appendChild(el("div", "sub", "SS · " + formatNum(hero.power)));
+        const wrap = el("div", "spacer-10");
+        wrap.appendChild(makeButton("6666 KC", "", function() { buySupport("SS", idx); }, false));
+        card.appendChild(wrap);
+        supportGrid.appendChild(card);
+      });
+      left.appendChild(supportGrid);
+
+      const right = el("div", "card");
+      right.appendChild(el("div", "section-title", "Ghi chú reset"));
+      const list = el("div", "list-box");
+      list.style.maxHeight = "none";
+      [
+        "- Hero SSS đổi sau mỗi 1 giờ.",
+        "- 3 Hero SS đổi sau mỗi 20 phút.",
+        "- Làm mới shop miễn phí 3 lần.",
+        "- Từ lần 4: tốn 150 kim cương, mỗi lần sau tăng thêm 30%.",
+        "- Dữ liệu shop, nhân vật và tài nguyên đều được lưu bằng localStorage.",
+        "- Tướng SS/SSS có thể mở sao đỏ ở lv 360 bằng 100 thẻ đột phá.",
+        "- Sau khi mở sao đỏ, SS lên tối đa lv 600 và SSS lên tối đa lv 850.",
+      ].forEach(function(item) { list.appendChild(el("div", "log-item", item)); });
+      right.appendChild(list);
+
+      wrapper.appendChild(left);
+      wrapper.appendChild(right);
+      root.appendChild(wrapper);
+    }
+
+    function renderArena() {
+      const root = document.getElementById("tab-arena");
+      clearNode(root);
+      const wrapper = el("div", "grid two-col");
+      const board = getArenaBoard();
+
+      const left = el("div", "card");
+      left.appendChild(el("div", "section-title", "Leo Top đỉnh cao"));
+      const list = el("div", "list-box");
+      list.style.maxHeight = "460px";
+      board.forEach(function(row, idx) {
+        const item = el("div", "rank-item");
+        const line = el("div", "row");
+        const info = el("div");
+        const title = el("div", "strong", "#" + (idx + 1) + " " + row.name);
+        if (row.isPlayer) {
+          const badge = el("span", "badge S", "Bạn");
+          badge.style.marginLeft = "8px";
+          title.appendChild(document.createTextNode(" "));
+          title.appendChild(badge);
+        }
+        info.appendChild(title);
+        info.appendChild(el("div", "sub", "Lực chiến: " + formatNum(row.power)));
+        line.appendChild(info);
+        if (!row.isPlayer) line.appendChild(makeButton("Thách đấu", "", function() { fightArena(idx); }, false));
+        item.appendChild(line);
+        list.appendChild(item);
+      });
+      left.appendChild(list);
+
+      const right = el("div", "card");
+      right.appendChild(el("div", "section-title", "Nhật ký đấu trường"));
+      const logs = el("div", "list-box");
+      if (game.arena.logs.length) {
+        game.arena.logs.forEach(function(log) { logs.appendChild(el("div", "log-item", log)); });
+      } else {
+        logs.appendChild(el("div", "sub", "Chưa có trận đấu nào."));
+      }
+      right.appendChild(logs);
+
+      wrapper.appendChild(left);
+      wrapper.appendChild(right);
+      root.appendChild(wrapper);
+    }
+
+    function renderGift() {
+      const root = document.getElementById("tab-gift");
+      clearNode(root);
+      const wrapper = el("div", "gift-single");
+      const card = el("div", "card");
+      card.appendChild(el("div", "section-title", "Nhập giftcode"));
+      const input = document.createElement("input");
+      input.id = "giftcodeInput";
+      input.placeholder = "Nhập giftcode...";
+      card.appendChild(input);
+      const btnWrap = el("div", "spacer-12");
+      btnWrap.appendChild(makeButton("Nhận quà", "", redeemCode, false));
+      card.appendChild(btnWrap);
+      card.appendChild(el("div", "sub spacer-10", "Code đã nhập sẽ được lưu lại, không dùng lại được. Riêng XOABO001 có thể dùng nhiều lần."));
+      wrapper.appendChild(card);
+      root.appendChild(wrapper);
+    }
+
+    function renderConanTab() {
+      savePanelScroll("conan");
+      const root = document.getElementById("tab-conan");
+      clearNode(root);
+      const wrapper = el("div", "grid");
+
+      const summary = el("div", "card event-highlight");
+      summary.appendChild(el("div", "section-title", "Sự kiện COLLAB CONAN"));
+      const summaryGrid = el("div", "account-grid");
+      [
+        ["Điểm Conan", game.conanEvent.points],
+        ["Điểm thưởng cột mốc", game.conanEvent.bonusPoints],
+        ["Vé random Conan", game.conanEvent.tickets],
+        ["Hòm SS sự kiện", game.conanEvent.specialSsChest],
+        ["Hòm SSS sự kiện", game.conanEvent.specialSssChest],
+        ["Hòm SS giftcode", game.conanEvent.limitedGiftSsChest],
+        ["Điểm đã kiếm để tính cột mốc", game.conanEvent.lifetimeEarnedPoints],
+      ].forEach(function(pair) {
+        const card = el("div", "mini-card");
+        card.appendChild(el("div", "sub", pair[0]));
+        card.appendChild(el("div", "strong", String(pair[1])));
+        summaryGrid.appendChild(card);
+      });
+      summary.appendChild(summaryGrid);
+      const warn = el("div", "sub spacer-10 warn", "Điểm Conan không tính là vật phẩm chính thức. Cứ mỗi 1000 điểm kiếm được sẽ nhận thêm 200 điểm thưởng, 200 điểm này không cộng tiếp vào cột mốc.");
+      summary.appendChild(warn);
+      const chestActions = el("div", "actions spacer-12");
+      chestActions.appendChild(makeButton("Mở hòm SS sự kiện", "outline", openSpecialSsChest, false));
+      chestActions.appendChild(makeButton("Mở hòm SSS sự kiện", "outline", openSpecialSssChest, false));
+      chestActions.appendChild(makeButton("Mở hòm SS giftcode", "outline", openLimitedGiftSsChest, false));
+      summary.appendChild(chestActions);
+      wrapper.appendChild(summary);
+
+      const heroCard = el("div", "card");
+      heroCard.appendChild(el("div", "section-title", "Nhân vật sự kiện mới"));
+      const heroGrid = el("div", "support-grid");
+      eventHeroes.forEach(function(hero) {
+        const item = el("div", "mini-card");
+        item.appendChild(el("div", "strong", hero.name));
+        item.appendChild(el("div", "sub", "Bậc " + hero.rank + " · Lực chiến " + formatNum(hero.power)));
+        item.appendChild(el("div", "sub spacer-8 warn", "Nhân vật sự kiện, không thể random ra ở random thường."));
+        heroGrid.appendChild(item);
+      });
+      heroCard.appendChild(heroGrid);
+      wrapper.appendChild(heroCard);
+
+      const missionWrap = el("div", "grid two-col");
+      const missionCard = el("div", "card");
+      missionCard.appendChild(el("div", "section-title", "Nhiệm vụ thường (reset mỗi ngày)"));
+      getConanMissionGroups().forEach(function(group) {
+        const section = el("div", "spacer-10");
+        section.appendChild(el("div", "strong", group.title + " · hiện tại: " + (game.conanEvent.daily[group.key] || 0)));
+        const list = el("div", "list-box spacer-8");
+        list.style.maxHeight = "240px";
+        list.setAttribute("data-scroll-key", "conan-mission-" + group.key);
+        group.missions.forEach(function(mission) {
+          const done = game.conanEvent.daily.claimedMissionIds.includes(mission.id);
+          const canClaim = canClaimConanMission(group.key, mission);
+          const item = el("div", "log-item" + (done ? " mission-done" : ""));
+          item.appendChild(el("div", "strong", mission.label));
+          item.appendChild(el("div", "sub", "Mốc: " + mission.threshold + " · Thưởng: " + mission.reward + " điểm Conan"));
+          const btnWrap = el("div", "spacer-8");
+          btnWrap.appendChild(makeButton(done ? "Đã nhận" : (canClaim ? "Nhận thưởng" : "Chưa đủ"), done ? "outline" : (canClaim ? "" : "secondary"), function() { claimConanMission(group.key, mission.id); }, done || !canClaim));
+          item.appendChild(btnWrap);
+          list.appendChild(item);
+        });
+        section.appendChild(list);
+        missionCard.appendChild(section);
+      });
+
+      const exchangeCard = el("div", "card");
+      exchangeCard.appendChild(el("div", "section-title", "Đổi quà"));
+      const exchangeList = el("div", "list-box");
+      exchangeList.style.maxHeight = "520px";
+      exchangeList.setAttribute("data-scroll-key", "conan-exchange");
+      conanExchangeRewards.forEach(function(reward) {
+        const item = el("div", "log-item");
+        item.appendChild(el("div", "strong", reward.label));
+        item.appendChild(el("div", "sub", "Giá đổi: " + reward.cost + " điểm Conan"));
+        const btnWrap = el("div", "spacer-8");
+        btnWrap.appendChild(makeButton("Đổi quà", "", function() { exchangeConanReward(reward.id); }, game.conanEvent.points < reward.cost));
+        item.appendChild(btnWrap);
+        exchangeList.appendChild(item);
+      });
+      exchangeCard.appendChild(exchangeList);
+      missionWrap.appendChild(missionCard);
+      missionWrap.appendChild(exchangeCard);
+      wrapper.appendChild(missionWrap);
+
+      const wheelWrap = el("div", "grid two-col");
+      const wheelCard = el("div", "card");
+      wheelCard.appendChild(el("div", "section-title", "Vòng quay Conan"));
+      wheelCard.appendChild(el("div", "sub", "1 lần / 1 thẻ Conan · 5 lần / 4 thẻ Conan"));
+      const wheelActions = el("div", "actions spacer-12");
+      wheelActions.appendChild(makeButton("Quay 1 lần", "", function() { spinConanWheel(1); }, game.conanEvent.tickets < 1));
+      wheelActions.appendChild(makeButton("Quay 5 lần", "", function() { spinConanWheel(5); }, game.conanEvent.tickets < 4));
+      wheelCard.appendChild(wheelActions);
+      const rateList = el("div", "list-box spacer-12");
+      rateList.style.maxHeight = "420px";
+      rateList.setAttribute("data-scroll-key", "conan-wheel-rates");
+      conanWheelRewards.forEach(function(reward) {
+        rateList.appendChild(el("div", "log-item", reward.label + " · " + reward.rate + "%"));
+      });
+      wheelCard.appendChild(rateList);
+
+      const wheelLogCard = el("div", "card");
+      wheelLogCard.appendChild(el("div", "section-title", "Lịch sử vòng quay Conan"));
+      const wheelLogs = el("div", "list-box");
+      wheelLogs.setAttribute("data-scroll-key", "conan-wheel-logs");
+      if (game.conanEvent.wheelLogs.length) {
+        game.conanEvent.wheelLogs.forEach(function(log) { wheelLogs.appendChild(el("div", "log-item", log)); });
+      } else {
+        wheelLogs.appendChild(el("div", "sub", "Chưa có lượt quay Conan nào."));
+      }
+      wheelLogCard.appendChild(wheelLogs);
+
+      wheelWrap.appendChild(wheelCard);
+      wheelWrap.appendChild(wheelLogCard);
+      wrapper.appendChild(wheelWrap);
+
+      root.appendChild(wrapper);
+      restorePanelScroll("conan");
+    }
+
+    function renderQuickChecks() {
+      const quick = document.getElementById("quickChecks");
+      clearNode(quick);
+      [
+        "expNeededForLevel(1) = " + expNeededForLevel(1),
+        "expNeededForLevel(100) = " + expNeededForLevel(100),
+        "gachaGoldCost(1, 1) = " + gachaGoldCost(1, 1),
+        "gachaGoldCost(50, 10) = " + gachaGoldCost(50, 10),
+        "Tỉ lệ gacha hiện tại = B 50% · A 33% · S 15% · SS 2%",
+        "Tổng hero trong pool = " + getAllHeroPool().length,
+        "Top arena hiển thị = " + getArenaBoard().length,
+        "Buff EXP hiện tại = x" + game.buffs.expMultiplier,
+        "Tỉ lệ Conan = 3 nhân vật x 0.05%",
+        "Lv max SS sau sao đỏ = " + heroEvolvedMaxLvByRank.SS,
+        "Lv max SSS sau sao đỏ = " + heroEvolvedMaxLvByRank.SSS,
+      ].forEach(function(item) {
+        quick.appendChild(el("div", "log-item", item));
+      });
+    }
+
+    function renderPanels() {
+      document.querySelectorAll(".tab-panel").forEach(function(panel) { panel.classList.remove("active"); });
+      document.getElementById("tab-" + activeTab).classList.add("active");
+      renderDetective();
+      renderGacha();
+      renderHeroes();
+      renderSupport();
+      renderArena();
+      renderGift();
+      renderConanTab();
+    }
+
+    function renderDynamic() {
+      renderStats();
+      renderAccount();
+      renderQuickChecks();
+      if (activeTab === "detective") renderDetective();
+      if (activeTab === "arena") renderArena();
+      if (activeTab === "support") renderSupport();
+      if (activeTab === "conan") renderConanTab();
+    }
+
+    function renderAll() {
+      ensureConanDailyReset();
+      renderTabs();
+      renderStats();
+      renderAccount();
+      renderPanels();
+      renderQuickChecks();
+      document.getElementById("notice").textContent = notice;
+    }
+
+    function renderBattleEffect(win, enemy) {
+      const root = document.getElementById("battleFx");
+      if (!root) return;
+      if (battleFxTimer) {
+        clearTimeout(battleFxTimer);
+        battleFxTimer = null;
+      }
+      clearNode(root);
+      root.className = "battle-fx " + (win ? "win" : "lose");
+
+      const card = el("div", "battle-fx-card");
+      const title = el("div", "battle-fx-title", win ? "CHIẾN THẮNG" : "THẤT BẠI");
+      const sub = el("div", "battle-fx-sub", (win ? "Bạn đã vượt qua " : "Bạn vừa thua ") + enemy.name + " · " + formatNum(enemy.power));
+      card.appendChild(title);
+      card.appendChild(sub);
+      root.appendChild(card);
+
+      for (let i = 0; i < 14; i += 1) {
+        const p = el("div", "battle-fx-burst");
+        const angle = (Math.PI * 2 * i) / 14;
+        const dist = 50 + Math.random() * 90;
+        p.style.setProperty("--dx", Math.cos(angle) * dist + "px");
+        p.style.setProperty("--dy", Math.sin(angle) * dist + "px");
+        p.style.background = win ? "rgba(34,197,94,0.9)" : "rgba(239,68,68,0.9)";
+        root.appendChild(p);
+      }
+
+      requestAnimationFrame(function() {
+        root.classList.add("show");
+      });
+
+      battleFxTimer = setTimeout(function() {
+        root.classList.remove("show");
+        setTimeout(function() {
+          clearNode(root);
+          root.className = "battle-fx";
+        }, 220);
+      }, 1200);
+    }
+
+    function renderGachaEffect(rewards, times) {
+      const root = document.getElementById("gachaFx");
+      if (!root) return;
+      if (gachaFxTimer) {
+        clearTimeout(gachaFxTimer);
+        gachaFxTimer = null;
+      }
+      clearNode(root);
+      root.className = "gacha-fx";
+
+      const bestRankOrder = { B: 1, A: 2, S: 3, SS: 4 };
+      const best = rewards.reduce(function(acc, hero) {
+        if (!acc) return hero;
+        return (bestRankOrder[hero.rank] > bestRankOrder[acc.rank]) ? hero : acc;
+      }, null);
+
+      const card = el("div", "gacha-fx-card");
+      card.appendChild(el("div", "gacha-fx-title", times >= 10 ? "MULTI SUMMON" : "SUMMON"));
+      card.appendChild(el("div", "gacha-fx-sub", times + " lượt quay · " + rewards.length + " phần thưởng"));
+      if (best) {
+        card.appendChild(el("div", "gacha-fx-highlight", best.name + " [" + best.rank + "]"));
+      }
+      const subline = el("div", "gacha-fx-sub", rewards.slice(0, 4).map(function(r) { return r.name + " (" + r.rank + ")"; }).join(" · ") + (rewards.length > 4 ? " ..." : ""));
+      subline.style.marginTop = "10px";
+      card.appendChild(subline);
+      root.appendChild(card);
+
+      const burstColors = ["#818cf8", "#38bdf8", "#f59e0b", "#d946ef", "#22c55e"];
+      for (let i = 0; i < 18; i += 1) {
+        const p = el("div", "gacha-fx-burst");
+        const angle = (Math.PI * 2 * i) / 18;
+        const dist = 55 + Math.random() * 110;
+        p.style.setProperty("--dx", Math.cos(angle) * dist + "px");
+        p.style.setProperty("--dy", Math.sin(angle) * dist + "px");
+        p.style.background = burstColors[i % burstColors.length];
+        root.appendChild(p);
+      }
+
+      requestAnimationFrame(function() {
+        root.classList.add("show");
+      });
+
+      gachaFxTimer = setTimeout(function() {
+        root.classList.remove("show");
+        setTimeout(function() {
+          clearNode(root);
+          root.className = "gacha-fx";
+        }, 220);
+      }, 1350);
+    }
+
+    function startCanvas() {
+      const canvas = document.getElementById("gameCanvas");
+      const ctx = canvas.getContext("2d");
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+      function draw() {
+        canvasFrame += 1;
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+        const grad = ctx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, "#111827");
+        grad.addColorStop(1, "#4b5563");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+        for (let i = 0; i < 40; i += 1) {
+          const x = (i * 97 + canvasFrame * 0.4) % w;
+          const y = (i * 37 + Math.sin((canvasFrame + i * 12) / 20) * 20 + h / 2) % h;
+          ctx.beginPath();
+          ctx.arc(x, y, 2 + (i % 3), 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(255,255,255," + (0.15 + (i % 5) * 0.08) + ")";
+          ctx.fill();
+        }
+        ctx.fillStyle = "rgba(255,255,255,0.92)";
+        ctx.font = "bold 28px sans-serif";
+        ctx.fillText("DRAGON DETECTIVE GACHA", 24, 48);
+        ctx.font = "16px sans-serif";
+        ctx.fillText("Lv tài khoản: " + game.player.level + " / " + game.player.maxLevel, 24, 78);
+        ctx.fillText("EXP: " + game.player.exp + " / " + (expNeededForLevel(game.player.level) || 0), 24, 102);
+        ctx.fillText("Lực chiến đội hình: " + formatNum(getPlayerTeamPower()), 24, 126);
+        ctx.fillText("Kim cương: " + game.resources.diamonds + " | Vàng: " + game.resources.gold, 24, 150);
+        ctx.fillText("Đội hình: " + game.team.length + "/5", 24, 174);
+        ctx.strokeStyle = "rgba(255,255,255,0.25)";
+        ctx.strokeRect(18, 18, w - 36, h - 36);
+        animationFrame = requestAnimationFrame(draw);
+      }
+      draw();
+    }
+
+    function bindStaticActions() {
+      document.getElementById("openSsChestBtn").addEventListener("click", openSSChest);
+      document.getElementById("resetSaveBtn").addEventListener("click", resetSave);
+    }
+
+    function runSelfChecks() {
+      console.assert(expNeededForLevel(1) > 0, "expNeededForLevel(1) phải > 0");
+      console.assert(gachaGoldCost(50, 10) > gachaGoldCost(1, 10), "Giá vàng gacha phải tăng theo level");
+      console.assert(Array.isArray(getArenaBoard()) && getArenaBoard().length <= 20, "BXH arena phải <= 20 phần tử");
+      console.assert(rarityRate.find(function(r) { return r.rank === "SS"; }).rate === 0.02, "Tỉ lệ SS phải là 2%");
+      console.assert(conanWheelRewards.filter(function(r) { return r.type === "hero"; }).length === 3, "Phải có 3 nhân vật Conan trong vòng quay");
+      console.assert(Math.abs(conanWheelRewards.reduce(function(sum, r) { return sum + r.rate; }, 0) - 100) < 1e-9, "Tổng tỉ lệ vòng quay Conan phải bằng 100%");
+      console.assert(typeof renderDynamic === "function", "renderDynamic phải tồn tại");
+      console.assert(limitedGiftSsChestPool.length === 6, "Pool hòm SS giftcode phải có 6 tướng");
+      console.assert(giftcodes.XOABO001.repeatable === true, "XOABO001 phải là code dùng nhiều lần");
+      console.assert(heroEvolvedMaxLvByRank.SS === 600, "SS sau sao đỏ phải max 600");
+      console.assert(heroEvolvedMaxLvByRank.SSS === 850, "SSS sau sao đỏ phải max 850");
+      console.assert(typeof game.supportShop.sssGeneratedAt === "number", "Chi viện phải có mốc thời gian reset SSS");
+      console.assert(typeof game.supportShop.ssGeneratedAt === "number", "Chi viện phải có mốc thời gian reset SS");
+      console.assert(typeof game.supportShop.nextRefreshDiamondCost === "number", "Chi viện phải có giá refresh tiếp theo");
+      console.assert(game.supportShop.freeRefreshUsed <= 3, "Chi viện chỉ có tối đa 3 lần miễn phí");
+      console.assert(chapters.length === 3, "Trinh thám mới phải có 3 chương");
+      console.assert(game.player.maxLevel >= 250, "Level tài khoản tối đa phải hỗ trợ tới 250");
+      console.assert(typeof renderBattleEffect === "function", "Hiệu ứng thắng thua phải tồn tại");
+      console.assert(typeof renderGachaEffect === "function", "Hiệu ứng gacha phải tồn tại");
+    }
+
+    function init() {
+      game = loadGame();
+      ensureConanDailyReset();
+      bindStaticActions();
+      startCanvas();
+      renderAll();
+      runSelfChecks();
+      setInterval(tickGame, 1000);
+    }
+
+    init();
+  </script>
+  <div id="gachaFx" class="gacha-fx" aria-hidden="true"></div>
+  <div id="battleFx" class="battle-fx" aria-hidden="true"></div>
+</body>
+</html>
+      border-radius: 18px;
+      padding: 14px;
+    }
+    .section-title { font-size: 20px; font-weight: 800; margin: 0 0 14px; color: #1f2937; }
+    .sub { color: #6b7280; font-size: 14px; }
+    .strong { font-weight: 800; margin-top: 6px; color: #111827; }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .actions, .hero-actions, .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tabs { margin-top: 20px; margin-bottom: 16px; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 700;
+      background: #4b5563;
+      color: #f9fafb;
+    }
+    button.secondary { background: #6b7280; }
+    button.danger { background: #b91c1c; }
+    button.outline { background: #f9fafb; color: #111827; border: 1px solid #d1d5db; }
+    button.active-tab { background: #374151; }
+    button:disabled { opacity: 0.65; cursor: not-allowed; }
+    input {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid #d1d5db;
+      padding: 10px 12px;
+      font-size: 14px;
+      background: #ffffff;
+      color: #111827;
+    }
+    .progress { width: 100%; height: 12px; background: #e5e7eb; border-radius: 999px; overflow: hidden; }
+    .progress-bar { height: 100%; background: linear-gradient(90deg, #9ca3af, #4b5563); width: 0%; }
+    .badge {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 6px 10px;
+      color: white;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .badge.B { background: #64748b; }
+    .badge.A { background: #10b981; }
+    .badge.S { background: #0ea5e9; }
+    .badge.SS { background: #d946ef; }
+    .badge.SSS { background: #f59e0b; }
+    .badge.EVENT { background: #dc2626; }
+    .list-box { max-height: 320px; overflow: auto; display: grid; gap: 8px; }
+    .log-item, .rank-item { background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 14px; padding: 10px 12px; }
+    .spacer-8 { margin-top: 8px; }
+    .spacer-10 { margin-top: 10px; }
+    .spacer-12 { margin-top: 12px; }
+    .spacer-14 { margin-top: 14px; }
+    .spacer-16 { margin-top: 16px; }
+    .mission-done { background: #ecfdf5; border-color: #86efac; }
+    .warn { color: #92400e; }
+    .event-highlight { background: #fff7ed; border-color: #fdba74; }
+    .evolve-note { color: #7c2d12; font-weight: 700; }
+    .battle-fx {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 180ms ease;
+    }
+    .battle-fx.show { opacity: 1; }
+    .battle-fx.win { background: radial-gradient(circle, rgba(34,197,94,0.18), rgba(17,24,39,0.08)); }
+    .battle-fx.lose { background: radial-gradient(circle, rgba(239,68,68,0.18), rgba(17,24,39,0.08)); }
+    .battle-fx-card {
+      min-width: 280px;
+      max-width: 90vw;
+      text-align: center;
+      padding: 28px 22px;
+      border-radius: 24px;
+      background: rgba(255,255,255,0.96);
+      border: 1px solid rgba(107,114,128,0.22);
+      box-shadow: 0 20px 40px rgba(17,24,39,0.18);
+      transform: scale(0.9) translateY(10px);
+      transition: transform 220ms ease;
+    }
+    .battle-fx.show .battle-fx-card { transform: scale(1) translateY(0); }
+    .battle-fx-title {
+      font-size: 34px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    .battle-fx.win .battle-fx-title { color: #15803d; }
+    .battle-fx.lose .battle-fx-title { color: #b91c1c; }
+    .battle-fx-sub { color: #4b5563; font-size: 15px; }
+    .battle-fx-burst {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      animation: battleBurst 700ms ease-out forwards;
+      opacity: 0.8;
+    }
+    @keyframes battleBurst {
+      from { transform: translate(0,0) scale(0.6); opacity: 0.9; }
+      to { transform: translate(var(--dx), var(--dy)) scale(1.6); opacity: 0; }
+    }
     canvas {
       width: 100%;
       border-radius: 20px;
