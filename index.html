@@ -1917,6 +1917,1889 @@
   </script>
 </body>
 </html>
+      width: 100%;
+      overflow-x: hidden;
+    }
+    .topbar {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .panel {
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+      backdrop-filter: blur(10px);
+      min-width: 0;
+    }
+    .hero {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 16px;
+      align-items: center;
+    }
+    .title {
+      font-size: 32px;
+      font-weight: 900;
+      line-height: 1.05;
+      margin: 0 0 8px;
+    }
+    .subtitle {
+      color: #e2e8f0;
+      margin: 0;
+      line-height: 1.5;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .stat {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 12px;
+    }
+    .stat .k {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+    .stat .v {
+      font-weight: 800;
+      font-size: 20px;
+    }
+    .main {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    .sidebar {
+      display: grid;
+      grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      min-width: 0;
+    }
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .feature-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .feature-item {
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.06);
+      color: #f8fafc;
+      font-size: 14px;
+    }
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .section-title h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+    .muted { color: var(--muted); }
+    .small { font-size: 12px; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(56,189,248,.16);
+      border: 1px solid rgba(56,189,248,.28);
+      color: #e0f2fe;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .spaced {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn {
+      border: 0;
+      border-radius: 16px;
+      padding: 11px 14px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: white;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+    }
+    .btn.secondary {
+      background: #334155;
+      color: var(--text);
+      box-shadow: none;
+      border: 1px solid var(--border);
+    }
+    .btn.warn { background: linear-gradient(135deg, #f59e0b, #ef4444); }
+    .btn.good { background: linear-gradient(135deg, #16a34a, #10b981); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .progress {
+      width: 100%;
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .progress > div {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      width: 0%;
+      transition: width .25s ease;
+    }
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .tab {
+      padding: 10px 14px;
+      border-radius: 14px;
+      background: #334155;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .tab.active {
+      background: linear-gradient(135deg, rgba(56,189,248,.28), rgba(139,92,246,.26));
+      border-color: rgba(139,92,246,.5);
+      color: #ffffff;
+    }
+    .content-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 12px;
+    }
+    .shop-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    .shop-items-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 12px;
+    }
+    .shop-card, .fruit-card, .item-card, .pirate-card {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 12px;
+      min-width: 0;
+    }
+    .shop-card h4 {
+      margin: 0 0 6px;
+      font-size: 16px;
+    }
+    .shop-price {
+      font-weight: 900;
+      font-size: 20px;
+      margin-top: 8px;
+    }
+    .fruit-card h4, .pirate-card h4 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+    .fruit-tier {
+      font-size: 12px;
+      font-weight: 800;
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      margin-bottom: 8px;
+    }
+    .tier-common { background: rgba(148,163,184,.15); color: #dbe7ff; }
+    .tier-uncommon { background: rgba(34,197,94,.14); color: #b8ffd6; }
+    .tier-rare { background: rgba(59,130,246,.14); color: #cde0ff; }
+    .tier-super { background: rgba(168,85,247,.14); color: #ead5ff; }
+    .tier-legend { background: rgba(245,158,11,.18); color: #ffe5b4; }
+    .tier-god { background: rgba(239,68,68,.18); color: #ffd2d2; }
+    .line {
+      height: 1px;
+      background: var(--border);
+      margin: 12px 0;
+    }
+    .battle-overlay, .popup-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(3,6,18,.78);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 30;
+    }
+    .battle-overlay.show, .popup-overlay.show { display: flex; }
+    .admin-lock-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10,10,10,.96);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 80;
+    }
+    .admin-lock-overlay.show { display: flex; }
+    .admin-lock-box {
+      width: min(720px, 100%);
+      background: linear-gradient(180deg, #1e293b, #020617);
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 28px;
+      padding: 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.6);
+      text-align: center;
+    }
+    .lock-hint {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.1);
+      display: inline-block;
+      font-weight: 800;
+    }
+    .gacha-reel-wrap {
+      position: relative;
+      margin: 18px auto 12px;
+      width: min(760px, 100%);
+      overflow: hidden;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      padding: 14px 0;
+    }
+    .gacha-reel {
+      display: flex;
+      gap: 12px;
+      width: max-content;
+      transform: translateX(0px);
+      transition: transform 8s cubic-bezier(.12,.82,.16,1);
+      will-change: transform;
+      padding: 0 12px;
+    }
+    .gacha-card {
+      width: 140px;
+      flex: 0 0 140px;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 12px 10px;
+      text-align: center;
+    }
+    .gacha-card .name {
+      font-weight: 900;
+      margin-top: 8px;
+      font-size: 16px;
+    }
+    .gacha-card .power {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+    .gacha-pointer {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      transform: translateX(-50%);
+      background: linear-gradient(180deg, #fde68a, #f59e0b);
+      box-shadow: 0 0 18px rgba(245,158,11,.7);
+      border-radius: 999px;
+      z-index: 2;
+    }
+    .battle-box, .popup-box {
+      width: min(920px, 100%);
+      background: linear-gradient(180deg, #1e293b, #0f172a);
+      border-radius: 28px;
+      border: 1px solid var(--border);
+      box-shadow: 0 20px 60px rgba(0,0,0,.6);
+      padding: 18px;
+    }
+    .battle-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 16px 0;
+    }
+    .fighter {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 14px;
+    }
+    .fighter h4 { margin: 0 0 8px; }
+    .hp-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+    .skills {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .skill-btn {
+      text-align: left;
+      background: linear-gradient(180deg, rgba(110,168,255,.14), rgba(139,92,246,.12));
+      border: 1px solid rgba(110,168,255,.22);
+      color: var(--text);
+      border-radius: 16px;
+      padding: 12px;
+      cursor: pointer;
+      min-height: 92px;
+    }
+    .skill-btn.locked {
+      opacity: .48;
+      cursor: not-allowed;
+      filter: grayscale(.2);
+    }
+    .battle-log {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 12px;
+      min-height: 120px;
+      max-height: 170px;
+      overflow: auto;
+      line-height: 1.5;
+    }
+    .resource-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .empty {
+      border: 1px dashed var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      color: var(--muted);
+      text-align: center;
+    }
+    .reward-list {
+      display: grid;
+      gap: 10px;
+      max-height: 320px;
+      overflow: auto;
+    }
+    .reward-item {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 12px;
+    }
+    .reward-item .time {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .reward-item .desc {
+      font-weight: 700;
+      line-height: 1.5;
+    }
+    .center { text-align: center; }
+    @media (max-width: 980px) {
+      .topbar, .main, .hero, .battle-grid, .content-grid, .sidebar { grid-template-columns: 1fr; }
+      .resource-row, .stats, .skills, .quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .app { padding: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="panel hero">
+        <div>
+          <h1 class="title">Hải Tặc Trái Ác Quỷ</h1>
+          <p class="subtitle">Chế độ thám hiểm: rong buồm, gặp hải tặc ngẫu nhiên, chiến đấu bằng kỹ năng trái ác quỷ để lấy vàng, kim cương, trái mới, thẻ awakening và tăng mastery.</p>
+        </div>
+        <div class="stats" id="topStats"></div>
+      </div>
+      <div class="panel">
+        <div class="section-title">
+          <h3>Nhân vật</h3>
+          <span class="chip" id="powerChip"></span>
+        </div>
+        <div style="margin-bottom:8px; font-weight:800;" id="playerName">Thuyền trưởng</div>
+        <div class="small muted">Level người chơi • Max 600</div>
+        <div class="spaced"><div id="levelText"></div><div id="expText" class="small muted"></div></div>
+        <div class="progress"><div id="expBar"></div></div>
+        <div class="line"></div>
+        <div class="small muted">Trái đang trang bị</div>
+        <div id="equippedFruitText" style="font-weight:800; margin-top:6px;"></div>
+        <div class="small muted" id="masteryText" style="margin-top:6px;"></div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="sidebar" id="mainSidebar">
+        <div class="panel">
+          <div class="section-title">
+            <h3>Bắt đầu chơi</h3>
+            <span class="chip">Ưu tiên</span>
+          </div>
+          <div class="quick-grid" id="resourceRow"></div>
+          <div id="adventurePanelWrap">
+            <div class="line"></div>
+            <div class="section-title">
+              <h3>Chương thám hiểm</h3>
+              <span class="chip" id="chapterReq"></span>
+            </div>
+            <select id="chapterSelect" onchange="changeChapter(this.value)" style="width:100%; background:#1e293b; color:white; border:1px solid var(--border); border-radius:14px; padding:12px; margin-bottom:12px;"></select>
+            <div id="chapterInfo" class="small muted" style="line-height:1.7;"></div>
+            <div class="line"></div>
+            <div class="spaced"><span>Tiến độ thám hiểm</span><strong id="exploreTimer">00:00 / 00:00</strong></div>
+            <div class="progress" style="margin:8px 0 12px;"><div id="exploreBar"></div></div>
+            <div class="row">
+              <button class="btn good" id="startExploreBtn" onclick="startExplore()">Bắt đầu thám hiểm</button>
+              <button class="btn secondary" id="stopExploreBtn" onclick="stopExplore()">Dừng</button>
+            </div>
+            <div class="feature-list">
+              <div class="feature-item">1. Chọn chương phù hợp level.</div>
+              <div class="feature-item">2. Bắt đầu thám hiểm để gặp hải tặc ngẫu nhiên.</div>
+              <div class="feature-item">3. Thắng để nhận vàng, kim cương, EXP, mastery và có cơ hội rơi trái.</div>
+              <div class="feature-item">4. Vào Túi đồ để đổi trái hoặc awakening.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stack">
+          <div class="panel">
+            <div class="section-title">
+              <h3>Tính năng</h3>
+              <span class="chip">Menu</span>
+            </div>
+            <div class="tabs" id="tabs"></div>
+            <div class="small muted">Thám hiểm để farm. Túi đồ để trang bị và awakening. Thư viện để xem toàn bộ trái. Shop để mua trái. Gacha để quay và nhập giftcode.</div>
+          </div>
+          <div class="panel" style="padding:20px 22px;">
+            <div class="section-title">
+              <h3>Nội dung chính</h3>
+            </div>
+            <div id="tabContent"></div>
+          </div>
+          <div class="panel" style="padding:18px 20px;">
+            <div class="section-title">
+              <h3>Nhận được trong cuộc thám hiểm</h3>
+              <span class="chip">Chuyến hiện tại</span>
+            </div>
+            <div id="exploreRewardsBox"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="battle-overlay" id="battleOverlay">
+    <div class="battle-box">
+      <div class="spaced">
+        <div>
+          <div class="chip">Gặp hải tặc</div>
+          <h2 id="battleTitle" style="margin:10px 0 0;">Chiến đấu</h2>
+        </div>
+        <button class="btn secondary" id="battleCloseBtn" disabled>Đang chiến đấu...</button>
+      </div>
+      <div class="battle-grid">
+        <div class="fighter">
+          <h4>Bản thân</h4>
+          <div class="hp-row"><span id="playerBattleName"></span><span id="playerHpText"></span></div>
+          <div class="progress"><div id="playerHpBar"></div></div>
+          <div class="small muted" id="battleFruitInfo" style="margin-top:8px;"></div>
+          <div class="skills" id="skillsBox"></div>
+        </div>
+        <div class="fighter">
+          <h4>Hải tặc</h4>
+          <div class="hp-row"><span id="pirateName"></span><span id="pirateHpText"></span></div>
+          <div class="progress"><div id="pirateHpBar"></div></div>
+          <div class="small muted" id="pirateInfo" style="margin-top:8px;"></div>
+          <div class="line"></div>
+          <div class="battle-log" id="battleLog"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="popup-overlay" id="gachaPopup">
+    <div class="popup-box center">
+      <div class="chip">Gacha trái ác quỷ</div>
+      <h2 style="margin-top:14px;">Kết quả quay</h2>
+      <div class="gacha-reel-wrap">
+        <div class="gacha-pointer"></div>
+        <div id="gachaReel" class="gacha-reel"></div>
+      </div>
+      <div id="gachaFruitName" style="font-size:34px; font-weight:900; margin:18px 0 8px;"></div>
+      <div id="gachaFruitTier" class="muted"></div>
+      <div id="gachaFruitPower" style="margin-top:8px; font-weight:800;"></div>
+      <p class="muted">Popup tự đóng sau khi quay xong.</p>
+    </div>
+  </div>
+
+  <div class="admin-lock-overlay" id="adminLockOverlay">
+    <div class="admin-lock-box">
+      <div class="chip" id="lockTitleChip">Cấm chơi</div>
+      <h2 id="lockTitleText" style="margin:14px 0 10px; font-size:36px;">Bạn đã nhập code ADM</h2>
+      <p id="lockDescText" class="muted" style="line-height:1.7;">Đây là code dành cho admin. Người chơi thường nhập vào sẽ bị phạt. Nhập đúng mật khẩu để thoát, hoặc chấp nhận hình phạt để tiếp tục chơi.</p>
+      <div id="lockHintBox" class="lock-hint" style="display:none;"></div>
+      <div id="lockTimeText" class="small muted" style="margin-top:10px;"></div>
+      <input id="adminPasswordInput" type="password" placeholder="Nhập mật khẩu" style="width:100%; max-width:340px; background:#1e293b; color:white; border:1px solid var(--border); border-radius:14px; padding:12px 14px; outline:none; margin-top:12px;" />
+      <div class="row" style="justify-content:center; margin-top:16px;">
+        <button class="btn" onclick="unlockAdminTrap()">Xác nhận mật khẩu</button>
+        <button class="btn warn" id="adminPunishBtn" onclick="acceptAdminPunishment()">Chịu hình phạt</button>
+      </div>
+      <div id="lockFooterText" class="small muted" style="margin-top:14px; line-height:1.7;">Sai mật khẩu sẽ không thoát được. Chịu hình phạt sẽ mất 10,000 kim cương, 1,000,000 vàng, 1,000 vé gacha và xoá toàn bộ trái trong túi.</div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'hai_tac_trai_ac_quy_save_v1';
+
+    const CHAPTERS = [
+      { id: 1, name: 'Chương 1', levelMin: 1, levelMax: 50, durationSec: 120, encounterMin: 10, encounterMax: 20, goldMin: 500, goldMax: 5000, gemChance: 0.30, gemAmount: 20, fruitChance: 0.20, awakenChance: 0.02, bossChance: 0.20, bossGoldMin: 10000, bossGoldMax: 20000, bossGemMin: 50, bossGemMax: 100, bossTicketMin: 0, bossTicketMax: 5 },
+      { id: 2, name: 'Chương 2', levelMin: 51, levelMax: 120, durationSec: 180, encounterMin: 10, encounterMax: 20, goldMin: 1300, goldMax: 8000, gemChance: 0.30, gemAmount: 35, fruitChance: 0.21, awakenChance: 0.02, bossChance: 0.20, bossGoldMin: 20000, bossGoldMax: 50000, bossGemMin: 80, bossGemMax: 180, bossTicketMin: 2, bossTicketMax: 8 },
+      { id: 3, name: 'Chương 3', levelMin: 121, levelMax: 230, durationSec: 270, encounterMin: 8, encounterMax: 19, goldMin: 2000, goldMax: 11000, gemChance: 0.31, gemAmount: 50, fruitChance: 0.235, awakenChance: 0.02, bossChance: 0.20, bossGoldMin: 30000, bossGoldMax: 100000, bossGemMin: 100, bossGemMax: 220, bossTicketMin: 5, bossTicketMax: 10 },
+      { id: 4, name: 'Chương 4', levelMin: 231, levelMax: 350, durationSec: 300, encounterMin: 8, encounterMax: 18, goldMin: 4500, goldMax: 16800, gemChance: 0.32, gemAmount: 65, fruitChance: 0.24, awakenChance: 0.02, bossChance: 0.20, bossGoldMin: 50000, bossGoldMax: 140000, bossGemMin: 150, bossGemMax: 280, bossTicketMin: 8, bossTicketMax: 15 },
+      { id: 5, name: 'Chương 5', levelMin: 351, levelMax: 475, durationSec: 360, encounterMin: 7, encounterMax: 17, goldMin: 12000, goldMax: 32000, gemChance: 0.34, gemAmount: 90, fruitChance: 0.26, awakenChance: 0.025, bossChance: 0.20, bossGoldMin: 150000, bossGoldMax: 350000, bossGemMin: 220, bossGemMax: 420, bossTicketMin: 12, bossTicketMax: 22 },
+      { id: 6, name: 'Chương 6', levelMin: 476, levelMax: 600, durationSec: 420, encounterMin: 6, encounterMax: 16, goldMin: 26000, goldMax: 70000, gemChance: 0.36, gemAmount: 130, fruitChance: 0.28, awakenChance: 0.03, bossChance: 0.20, bossGoldMin: 380000, bossGoldMax: 900000, bossGemMin: 350, bossGemMax: 700, bossTicketMin: 18, bossTicketMax: 35 },
+    ];
+
+    const FRUITS = [
+      { id:'rocket', name:'Rocket', tier:'Thường', power:50, awakenable:false },
+      { id:'bomb', name:'Bom', tier:'Thường', power:110, awakenable:false },
+      { id:'smoke', name:'Khói', tier:'Thường', power:150, awakenable:false },
+      { id:'spring', name:'Lò Xo', tier:'Thường', power:190, awakenable:false },
+      { id:'eagle', name:'Đại Bàng', tier:'Thường', power:300, awakenable:false },
+      { id:'fire', name:'Lửa', tier:'Phổ biến', power:1100, awakenable:true },
+      { id:'ice', name:'Băng', tier:'Phổ biến', power:1300, awakenable:true },
+      { id:'sand', name:'Cát', tier:'Phổ biến', power:1600, awakenable:false },
+      { id:'dark', name:'Bóng Tối', tier:'Phổ biến', power:2000, awakenable:true },
+      { id:'diamond', name:'Kim Cương', tier:'Phổ biến', power:2350, awakenable:false },
+      { id:'rubber', name:'Cao Su', tier:'Phổ biến', power:2500, awakenable:false },
+      { id:'light', name:'Ánh Sáng', tier:'Phổ biến', power:2900, awakenable:true },
+      { id:'barrier', name:'Rào Cản', tier:'Phổ biến', power:3000, awakenable:false },
+      { id:'magma', name:'Magma', tier:'Phổ biến', power:3700, awakenable:true },
+      { id:'quake', name:'Rung Chấn', tier:'Hiếm', power:6000, awakenable:false },
+      { id:'buddha', name:'Phật Tổ', tier:'Hiếm', power:6800, awakenable:true },
+      { id:'love', name:'Tình Yêu', tier:'Hiếm', power:7100, awakenable:false },
+      { id:'spider', name:'Spider', tier:'Hiếm', power:7250, awakenable:false },
+      { id:'sound', name:'Âm Thanh', tier:'Hiếm', power:7600, awakenable:true },
+      { id:'phoenix', name:'Phượng Hoàng', tier:'Hiếm', power:8000, awakenable:true },
+      { id:'water', name:'Nước', tier:'Hiếm', power:8500, awakenable:false },
+      { id:'portal', name:'Cổng Dịch Chuyển', tier:'Siêu hiếm', power:14000, awakenable:false },
+      { id:'thunder', name:'Sấm Sét', tier:'Siêu hiếm', power:17500, awakenable:false },
+      { id:'pain', name:'Nỗi Đau', tier:'Siêu hiếm', power:20000, awakenable:true },
+      { id:'snow', name:'Băng Tuyết', tier:'Siêu hiếm', power:26300, awakenable:true },
+      { id:'control', name:'Điều Khiển', tier:'Huyền thoại', power:53000, awakenable:true },
+      { id:'soul', name:'Linh Hồn', tier:'Huyền thoại', power:72000, awakenable:false },
+      { id:'dragon', name:'Rồng', tier:'Đẳng cấp', power:150000, awakenable:true },
+    ];
+
+    const TIER_CLASS = {
+      'Thường': 'tier-common',
+      'Phổ biến': 'tier-uncommon',
+      'Hiếm': 'tier-rare',
+      'Siêu hiếm': 'tier-super',
+      'Huyền thoại': 'tier-legend',
+      'Đẳng cấp': 'tier-god',
+    };
+
+    const GACHA_WEIGHTS = {
+      'Thường': 42,
+      'Phổ biến': 33,
+      'Hiếm': 15,
+      'Siêu hiếm': 7,
+      'Huyền thoại': 2.5,
+      'Đẳng cấp': 0.5,
+    };
+
+    const PIRATE_NAMES = [
+      'Hải tặc Cát Máu','Thợ săn Kho Báu','Đao Phủ Biển Đông','Hải Tặc Khói Đen','Lính Cướp Mũ Gai','Thuyền Trưởng Bão Tố',
+      'Kẻ Cướp Cảng Đêm','Sát Thủ Đại Dương','Hải tặc Hắc Lôi','Thủ Lĩnh Xích Sa','Hải tặc Lam Hỏa','Chiến binh Biển Sâu'
+    ];
+
+    const BOSS_NAMES = [
+      'Boss Hắc Long','Boss Lôi Đế','Boss Huyết Kiếm','Boss Hủy Diệt','Boss Đại Hải Ma','Boss Quỷ Vương Biển Sâu'
+    ];
+
+    const SKILLS = [
+      { name: 'Đòn Thường', mastery: 0, scale: 0.85, desc: 'Tấn công cơ bản, luôn dùng được.' },
+      { name: 'Kỹ Năng 1', mastery: 10, scale: 1.18, desc: 'Mở ở mastery 10.' },
+      { name: 'Kỹ Năng 2', mastery: 25, scale: 1.52, desc: 'Mở ở mastery 25.' },
+      { name: 'Tuyệt Kỹ', mastery: 50, scale: 2.05, desc: 'Mở ở mastery 50.' },
+    ];
+
+    const tabs = [
+      { id:'adventure', label:'Thám hiểm' },
+      { id:'inventory', label:'Túi đồ' },
+      { id:'library', label:'Thư viện' },
+      { id:'shop', label:'Shop' },
+      { id:'gacha', label:'Gacha' },
+    ];
+
+    const SHOP_REFRESH_MS = 15 * 60 * 1000;
+    const SHOP_PRICES = {
+      rocket: 50000, bomb: 75000, smoke: 85000, spring: 93000, eagle: 120000,
+      fire: 450000, ice: 500000, sand: 580000, dark: 680000, diamond: 760000,
+      rubber: 820000, light: 900000, barrier: 950000, magma: 1100000,
+      quake: 1500000, buddha: 1700000, love: 1850000, spider: 1950000, sound: 2100000, phoenix: 2300000, water: 2500000,
+      portal: 8500000, thunder: 9500000, pain: 10500000, snow: 12000000,
+      control: 35000000, soul: 45000000, dragon: 100000000,
+    };
+
+    const GIFT_CODES = {
+      GAMEMOI: { type: 'resource', gems: 5000, description: '5k kim cương' },
+      TANTHU001: { type: 'resource', gems: 800, description: '800 kim cương' },
+      TUAN001: { type: 'resource', gems: 4000, description: '4,000 kim cương' },
+      SUKIENSAPTOITHT: { type: 'resource', gems: 2000, description: '2,000 kim cương' },
+      HOMMAYMAN: { type: 'lucky_rare', description: 'mở quay may mắn chắc chắn ra trái Hiếm trở lên' },
+      ADM: { type: 'admin_trap', description: 'code admin, người nhập sai mục đích sẽ bị phạt' },
+      X2XXXX: { type: 'exp_boost', multiplier: 100, durationHours: 20, description: 'x100 exp trong 20 giờ' },
+      PRATHA: { type: 'exp_boost', multiplier: 100, durationHours: 200, description: 'x100 exp trong 200 giờ' },
+      TRANGNGU: { type: 'sleep_lock', fakeDescription: '8,000 kim cương', passwordHint: '5+10-8+10', password: 'leanh999', lockHours: 3, wrongPenaltyHours: 21, successGems: 5000, description: 'khóa tài khoản 3 giờ' },
+    };
+
+    const defaultSave = () => ({
+      player: {
+        level: 1,
+        exp: 0,
+        gold: 2000,
+        gems: 1000,
+        awakeningCards: 0,
+        gachaTickets: 2,
+        fruitInventory: { rocket: 1 },
+        fruitMastery: { rocket: 0 },
+        awakened: {},
+        redeemedCodes: [],
+        equippedFruitId: 'rocket',
+        adminTrapUnlocked: false,
+        adminTrapTriggered: false,
+        adminTrapResolved: false,
+        sleepLockResolved: false,
+        expBoostMultiplier: 1,
+        expBoostUntil: 0,
+      },
+      activeTab: 'adventure',
+      chapterId: 1,
+      shop: { refreshedAt: 0, nextRefreshAt: 0, items: [] },
+      adminLock: { active: false, type: '', until: 0 },
+      logs: ['Bắt đầu hành trình với 2,000 vàng, 1,000 kim cương và 2 vé gacha.'],
+      explore: {
+        active: false,
+        chapterId: 1,
+        startTime: 0,
+        endTime: 0,
+        nextEncounterAt: 0,
+        travelLoot: { gold:0, gems:0, tickets:0 },
+        rewards: [],
+      },
+      battle: null,
+    });
+
+    let state = loadState();
+    let gachaPopupTimer = null;
+    let exploreLoopTimer = null;
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return defaultSave();
+        return mergeDeep(defaultSave(), JSON.parse(raw));
+      } catch {
+        return defaultSave();
+      }
+    }
+
+    function saveState(showMessage = false) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      if (showMessage) addLog('Đã lưu dữ liệu game.');
+    }
+
+    function persistState() { saveState(false); }
+
+    function mergeDeep(base, extra) {
+      if (typeof base !== 'object' || base === null) return extra ?? base;
+      const out = Array.isArray(base) ? [...base] : { ...base };
+      for (const key in extra || {}) {
+        const bv = base[key];
+        const ev = extra[key];
+        out[key] = (typeof bv === 'object' && bv !== null && !Array.isArray(bv) && typeof ev === 'object' && ev !== null && !Array.isArray(ev))
+          ? mergeDeep(bv, ev)
+          : ev;
+      }
+      return out;
+    }
+
+    function addLog(text) {
+      state.logs.unshift(`[${new Date().toLocaleTimeString('vi-VN')}] ${text}`);
+      state.logs = state.logs.slice(0, 80);
+    }
+
+    function addExploreReward(text) {
+      if (!state.explore) return;
+      if (!Array.isArray(state.explore.rewards)) state.explore.rewards = [];
+      state.explore.rewards.unshift({ time: new Date().toLocaleTimeString('vi-VN'), text });
+      state.explore.rewards = state.explore.rewards.slice(0, 120);
+    }
+
+    const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
+    const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+    const chance = (prob) => Math.random() < prob;
+    const formatNum = (n) => Math.floor(n).toLocaleString('vi-VN');
+    function formatTime(sec) {
+      const s = Math.max(0, Math.floor(sec));
+      const m = Math.floor(s / 60);
+      const r = s % 60;
+      return `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;
+    }
+
+    function expNeeded(level) {
+      if (level >= 600) return 0;
+      return Math.floor(180 + level * 42 + Math.pow(level, 1.42) * 22);
+    }
+
+    function getExpBoostMultiplier() {
+      const until = Number(state.player.expBoostUntil || 0);
+      const mult = Number(state.player.expBoostMultiplier || 1);
+      if (until > Date.now() && mult > 1) return mult;
+      if (mult !== 1 || until !== 0) {
+        state.player.expBoostMultiplier = 1;
+        state.player.expBoostUntil = 0;
+      }
+      return 1;
+    }
+
+    function getExpBoostText() {
+      const mult = getExpBoostMultiplier();
+      if (mult <= 1) return '';
+      const remainMs = Math.max(0, Number(state.player.expBoostUntil || 0) - Date.now());
+      const hours = Math.floor(remainMs / 3600000);
+      const mins = Math.floor((remainMs % 3600000) / 60000);
+      return ` • Boost EXP x${mult} còn ${String(hours).padStart(2,'0')}:${String(mins).padStart(2,'0')}`;
+    }
+
+    const getEffectiveExpAmount = (amount) => Math.floor(amount * getExpBoostMultiplier());
+
+    function gainExp(amount) {
+      if (state.player.level >= 600) return;
+      const boostedAmount = getEffectiveExpAmount(amount);
+      state.player.exp += boostedAmount;
+      while (state.player.level < 600 && state.player.exp >= expNeeded(state.player.level)) {
+        state.player.exp -= expNeeded(state.player.level);
+        state.player.level += 1;
+        addLog(`Lên cấp! Bạn đã đạt level ${state.player.level}.`);
+      }
+      if (state.player.level >= 600) {
+        state.player.level = 600;
+        state.player.exp = 0;
+      }
+      persistState();
+    }
+
+    const getFruit = (id) => FRUITS.find(f => f.id === id);
+    const currentFruit = () => getFruit(state.player.equippedFruitId);
+    const getChapterById = (id) => CHAPTERS.find(c => c.id === Number(id)) || CHAPTERS[0];
+    const fruitCount = (id) => state.player.fruitInventory[id] || 0;
+    const fruitMastery = (id) => state.player.fruitMastery[id] || 0;
+    const isAwakened = (id) => !!state.player.awakened[id];
+
+    function getBaseFruitPool() { return FRUITS.filter(f => SHOP_PRICES[f.id]); }
+    const randomFruitFromPool = (pool) => pool[randInt(0, pool.length - 1)];
+
+    function createShopOffer(fruit) {
+      const basePrice = SHOP_PRICES[fruit.id];
+      const hasDiscount = Math.random() < 0.45;
+      const discountPercent = hasDiscount ? randInt(10, 90) : 0;
+      const finalPrice = Math.max(1, Math.floor(basePrice * (100 - discountPercent) / 100));
+      return { fruitId: fruit.id, basePrice, discountPercent, finalPrice, hasDiscount };
+    }
+
+    function generateShopItems() {
+      const pool = [...getBaseFruitPool()];
+      const items = [];
+      const slots = randInt(3, 5);
+      for (let i = 0; i < slots && pool.length > 0; i++) {
+        const fruit = randomFruitFromPool(pool);
+        items.push(createShopOffer(fruit));
+        const idx = pool.findIndex(f => f.id === fruit.id);
+        if (idx >= 0) pool.splice(idx, 1);
+      }
+      return items;
+    }
+
+    function ensureShop() {
+      const now = Date.now();
+      if (!state.shop) state.shop = { refreshedAt: 0, nextRefreshAt: 0, items: [] };
+      if (!Array.isArray(state.shop.items) || !state.shop.items.length || !state.shop.nextRefreshAt || now >= state.shop.nextRefreshAt) {
+        state.shop.items = generateShopItems();
+        state.shop.refreshedAt = now;
+        state.shop.nextRefreshAt = now + SHOP_REFRESH_MS;
+        persistState();
+      }
+    }
+
+    function forceRefreshShop() {
+      state.shop.items = generateShopItems();
+      state.shop.refreshedAt = Date.now();
+      state.shop.nextRefreshAt = Date.now() + SHOP_REFRESH_MS;
+      addLog('Shop đã làm mới danh sách trái ác quỷ.');
+      persistState();
+      render();
+    }
+
+    function buyShopItem(fruitId) {
+      ensureShop();
+      const item = state.shop.items.find(x => x.fruitId === fruitId);
+      if (!item) return addLogAndRender('Vật phẩm này không còn trong shop.');
+      if (state.player.gold < item.finalPrice) return addLogAndRender('Không đủ vàng để mua trái này.');
+      state.player.gold -= item.finalPrice;
+      state.player.fruitInventory[fruitId] = (state.player.fruitInventory[fruitId] || 0) + 1;
+      if (!(fruitId in state.player.fruitMastery)) state.player.fruitMastery[fruitId] = 0;
+      state.shop.items = state.shop.items.filter(x => x.fruitId !== fruitId);
+      addLog(`Mua thành công ${getFruit(fruitId).name} với giá ${formatNum(item.finalPrice)} vàng.`);
+      persistState();
+      render();
+    }
+
+    function addLogAndRender(text) { addLog(text); render(); }
+
+    function fruitPower(fruit) {
+      return Math.floor(fruit.power * (isAwakened(fruit.id) ? 1.45 : 1));
+    }
+
+    function playerCombatPower() {
+      const fruit = currentFruit();
+      const masteryBonus = 1 + Math.min(0.75, fruitMastery(fruit.id) * 0.012);
+      const levelBonus = 1 + state.player.level * 0.018;
+      return Math.floor(fruitPower(fruit) * masteryBonus * levelBonus);
+    }
+
+    function chapterForLevel(level) {
+      return CHAPTERS.find(c => level >= c.levelMin && level <= c.levelMax) || CHAPTERS[CHAPTERS.length - 1];
+    }
+
+    function playerMaxHp() {
+      return Math.floor(800 + state.player.level * 55 + playerCombatPower() * 0.085);
+    }
+
+    function createPirate(chapter, isBoss = false) {
+      const idx = chapter.id - 1;
+      const basePower = isBoss ? [1200, 7000, 22000, 65000, 145000, 320000][idx] : [200, 1800, 7000, 24000, 52000, 120000][idx];
+      const scale = isBoss ? [90, 180, 320, 520, 920, 1550][idx] : [25, 45, 75, 120, 210, 360][idx];
+      const randomBonus = isBoss ? randInt(Math.floor(basePower * 0.3), basePower) : randInt(0, basePower);
+      const power = Math.floor(basePower + state.player.level * scale + randomBonus);
+      const hp = Math.floor((isBoss ? 1200 : 700) + power * (isBoss ? 0.26 : 0.17));
+      return {
+        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+        name: isBoss ? BOSS_NAMES[randInt(0, BOSS_NAMES.length - 1)] : PIRATE_NAMES[randInt(0, PIRATE_NAMES.length - 1)],
+        power,
+        maxHp: hp,
+        hp,
+        chapterId: chapter.id,
+        isBoss,
+      };
+    }
+
+    function createBattle(chapter) {
+      const isBoss = chance(chapter.bossChance || 0);
+      const pirate = createPirate(chapter, isBoss);
+      const fruit = currentFruit();
+      state.battle = {
+        pirate,
+        playerHp: playerMaxHp(),
+        playerMaxHp: playerMaxHp(),
+        turnLocked: false,
+        reviveUsed: false,
+        logs: [isBoss ? `${pirate.name} xuất hiện! Đây là boss cực mạnh, bạn có 1 lần hồi sinh.` : `${pirate.name} xuất hiện! Hãy dùng ${fruit.name} để chiến đấu.`],
+      };
+      renderBattle();
+      document.getElementById('battleOverlay').classList.add('show');
+    }
+
+    function getSkillDamage(skill) {
+      const variance = 0.9 + Math.random() * 0.25;
+      return Math.floor(playerCombatPower() * skill.scale * 0.25 * variance);
+    }
+
+    function getPirateDamage() {
+      const pirate = state.battle.pirate;
+      const ratio = pirate.isBoss ? (0.16 + Math.random() * 0.1) : (0.12 + Math.random() * 0.08);
+      return Math.floor(pirate.power * ratio);
+    }
+
+    function battleUseSkill(index) {
+      if (!state.battle || state.battle.turnLocked) return;
+      const fruit = currentFruit();
+      const skill = SKILLS[index];
+      if (fruitMastery(fruit.id) < skill.mastery) return;
+      state.battle.turnLocked = true;
+      const dmg = getSkillDamage(skill);
+      state.battle.pirate.hp = Math.max(0, state.battle.pirate.hp - dmg);
+      state.battle.logs.unshift(`Bạn dùng ${skill.name}, gây ${formatNum(dmg)} sát thương.`);
+      renderBattle();
+      if (state.battle.pirate.hp <= 0) return setTimeout(() => finishBattle(true), 500);
+      setTimeout(() => {
+        const pdmg = getPirateDamage();
+        state.battle.playerHp = Math.max(0, state.battle.playerHp - pdmg);
+        state.battle.logs.unshift(`${state.battle.pirate.name} phản công gây ${formatNum(pdmg)} sát thương.`);
+        renderBattle();
+        if (state.battle.playerHp <= 0) {
+          if (state.battle.pirate.isBoss && !state.battle.reviveUsed) {
+            state.battle.reviveUsed = true;
+            state.battle.playerHp = Math.floor(state.battle.playerMaxHp * 0.5);
+            state.battle.logs.unshift('Bạn đã hồi sinh 1 lần với 50% HP để tiếp tục chiến đấu với boss.');
+            state.battle.turnLocked = false;
+            renderBattle();
+          } else {
+            setTimeout(() => finishBattle(false), 450);
+          }
+        } else {
+          state.battle.turnLocked = false;
+          renderBattle();
+        }
+      }, 650);
+    }
+
+    function expRewardForChapter(chapterId) {
+      const lv = state.player.level;
+      const ranges = {
+        1: [220, 480], 2: [700, 1450], 3: [1800, 3600], 4: [4200, 7600], 5: [9000, 16000], 6: [18000, 34000]
+      };
+      const scales = { 1:22, 2:38, 3:62, 4:95, 5:145, 6:220 };
+      const [minBase, maxBase] = ranges[chapterId] || [220, 480];
+      return randInt(minBase, maxBase) + lv * (scales[chapterId] || 22);
+    }
+
+    function giveFruit(id, sourceText) {
+      state.player.fruitInventory[id] = (state.player.fruitInventory[id] || 0) + 1;
+      if (!(id in state.player.fruitMastery)) state.player.fruitMastery[id] = 0;
+      const fruit = getFruit(id);
+      addLog(`${sourceText}: nhận trái ${fruit.name}.`);
+      return fruit;
+    }
+
+    function weightedGachaFruit(minTierList = null) {
+      const source = minTierList ? FRUITS.filter(f => minTierList.includes(f.tier)) : FRUITS;
+      const pool = source.map(f => ({ fruit: f, weight: GACHA_WEIGHTS[f.tier] || 1 }));
+      const total = pool.reduce((a, b) => a + b.weight, 0);
+      let roll = Math.random() * total;
+      for (const entry of pool) {
+        roll -= entry.weight;
+        if (roll <= 0) return entry.fruit;
+      }
+      return pool[0].fruit;
+    }
+
+    function buildGachaReel(targetFruit, guaranteedRare = false) {
+      const source = guaranteedRare ? FRUITS.filter(f => ['Hiếm','Siêu hiếm','Huyền thoại','Đẳng cấp'].includes(f.tier)) : FRUITS;
+      const reel = [];
+      for (let i = 0; i < 34; i++) reel.push(source[randInt(0, source.length - 1)]);
+      const targetIndex = 27;
+      reel[targetIndex] = targetFruit;
+      return { reel, targetIndex };
+    }
+
+    function randomDroppedFruit() {
+      const chapter = getChapterById(state.explore.chapterId);
+      const allowedTiers = chapter.id === 1
+        ? ['Thường','Phổ biến']
+        : chapter.id === 2
+        ? ['Thường','Phổ biến','Hiếm']
+        : chapter.id === 3
+        ? ['Phổ biến','Hiếm','Siêu hiếm']
+        : chapter.id === 4
+        ? ['Hiếm','Siêu hiếm','Huyền thoại','Đẳng cấp']
+        : chapter.id === 5
+        ? ['Siêu hiếm','Huyền thoại','Đẳng cấp']
+        : ['Huyền thoại','Đẳng cấp'];
+      const pool = FRUITS.filter(f => allowedTiers.includes(f.tier));
+      return pool[randInt(0, pool.length - 1)];
+    }
+
+    function finishBattle(win) {
+      const chapter = getChapterById(state.battle.pirate.chapterId);
+      const fruit = currentFruit();
+      const masteryGain = randInt(2, 5) + chapter.id + (state.battle.pirate.isBoss ? chapter.id * 2 : 0);
+      state.player.fruitMastery[fruit.id] = (state.player.fruitMastery[fruit.id] || 0) + masteryGain;
+      if (win) {
+        let exp = expRewardForChapter(chapter.id);
+        if (state.battle.pirate.isBoss) {
+          const gold = randInt(chapter.bossGoldMin, chapter.bossGoldMax);
+          const gems = randInt(chapter.bossGemMin, chapter.bossGemMax);
+          const tickets = randInt(chapter.bossTicketMin, chapter.bossTicketMax);
+          state.player.gold += gold;
+          state.player.gems += gems;
+          state.player.gachaTickets += tickets;
+          state.explore.travelLoot.gold += gold;
+          state.explore.travelLoot.gems += gems;
+          state.explore.travelLoot.tickets += tickets;
+          exp = Math.floor(exp * 2.3);
+          state.battle.logs.unshift(`Hạ boss! Nhận ${formatNum(gold)} vàng, ${formatNum(gems)} kim cương, ${formatNum(tickets)} vé gacha.`);
+          addLog(`Hạ boss ${state.battle.pirate.name}, nhận thưởng lớn.`);
+          addExploreReward(`Hạ boss ${state.battle.pirate.name}: +${formatNum(gold)} vàng • +${formatNum(gems)} kim cương • +${formatNum(tickets)} vé gacha`);
+        } else {
+          const gold = randInt(chapter.goldMin, chapter.goldMax);
+          state.player.gold += gold;
+          state.explore.travelLoot.gold += gold;
+          state.battle.logs.unshift(`Chiến thắng! Nhận ${formatNum(gold)} vàng.`);
+          addLog(`Hạ ${state.battle.pirate.name}, nhận ${formatNum(gold)} vàng.`);
+          addExploreReward(`Đánh bại ${state.battle.pirate.name}: +${formatNum(gold)} vàng`);
+          if (chance(chapter.gemChance)) {
+            state.player.gems += chapter.gemAmount;
+            state.explore.travelLoot.gems += chapter.gemAmount;
+            state.battle.logs.unshift(`May mắn! Nhận thêm ${chapter.gemAmount} kim cương.`);
+            addLog(`Nhận ${chapter.gemAmount} kim cương từ ${state.battle.pirate.name}.`);
+            addExploreReward(`Thưởng thêm từ ${state.battle.pirate.name}: +${chapter.gemAmount} kim cương`);
+          }
+          if (chance(chapter.fruitChance)) {
+            const fruitDrop = randomDroppedFruit();
+            giveFruit(fruitDrop.id, `Rơi từ ${state.battle.pirate.name}`);
+            state.battle.logs.unshift(`Rơi trái ${fruitDrop.name}.`);
+            addExploreReward(`Rơi vật phẩm: trái ${fruitDrop.name}`);
+          }
+          if (chance(chapter.awakenChance)) {
+            state.player.awakeningCards += 1;
+            state.battle.logs.unshift('Rơi 1 thẻ awakening.');
+            addLog(`Nhặt được 1 thẻ awakening từ ${state.battle.pirate.name}.`);
+            addExploreReward(`Rơi vật phẩm: 1 thẻ awakening`);
+          }
+        }
+        const effectiveExp = getEffectiveExpAmount(exp);
+        gainExp(exp);
+        state.battle.logs.unshift(`Nhận ${formatNum(effectiveExp)} EXP và tăng mastery ${fruit.name}.`);
+        addExploreReward(`Nhận ${formatNum(effectiveExp)} EXP • ${fruit.name} +${masteryGain} mastery`);
+      } else {
+        const lostGold = Math.min(state.player.gold, Math.floor((state.explore.travelLoot.gold || 0) * 0.25 + randInt(80, 300)));
+        const lostGems = Math.min(state.player.gems, Math.floor((state.explore.travelLoot.gems || 0) * 0.25 + (Math.random() < 0.4 ? 5 : 0)));
+        const lostTickets = state.battle.pirate.isBoss ? Math.min(state.player.gachaTickets, Math.floor((state.explore.travelLoot.tickets || 0) * 0.2)) : 0;
+        state.player.gold -= lostGold;
+        state.player.gems -= lostGems;
+        state.player.gachaTickets -= lostTickets;
+        addLog(`Thua ${state.battle.pirate.name}, mất ${formatNum(lostGold)} vàng${lostGems ? ` và ${lostGems} kim cương` : ''}${lostTickets ? ` và ${lostTickets} vé gacha` : ''}.`);
+        state.battle.logs.unshift(`Thất bại! Bạn mất ${formatNum(lostGold)} vàng${lostGems ? ` và ${lostGems} kim cương` : ''}${lostTickets ? ` và ${lostTickets} vé gacha` : ''}.`);
+        addExploreReward(`Thua ${state.battle.pirate.name}: -${formatNum(lostGold)} vàng${lostGems ? ` • -${lostGems} kim cương` : ''}${lostTickets ? ` • -${lostTickets} vé gacha` : ''}`);
+      }
+      persistState();
+      renderBattle();
+      setTimeout(() => {
+        document.getElementById('battleOverlay').classList.remove('show');
+        state.battle = null;
+        if (state.explore.active) scheduleNextEncounter();
+        render();
+      }, 1200);
+    }
+
+    function startExplore() {
+      ensureExploreState();
+      state.activeTab = 'adventure';
+      if (state.battle) {
+        state.battle = null;
+        document.getElementById('battleOverlay').classList.remove('show');
+      }
+      const chapter = getChapterById(state.chapterId);
+      state.chapterId = chapter.id;
+      if (state.player.level < chapter.levelMin) return addLogAndRender(`Bạn cần level ${chapter.levelMin} để vào ${chapter.name}.`);
+      state.explore = {
+        active: true,
+        chapterId: chapter.id,
+        startTime: Date.now(),
+        endTime: Date.now() + chapter.durationSec * 1000,
+        nextEncounterAt: Date.now() + randInt(chapter.encounterMin, chapter.encounterMax) * 1000,
+        travelLoot: { gold:0, gems:0, tickets:0 },
+        rewards: [{ time: new Date().toLocaleTimeString('vi-VN'), text: `Bắt đầu ${chapter.name}` }],
+      };
+      addLog(`Bắt đầu ${chapter.name}.`);
+      persistState();
+      render();
+      updateLoop();
+    }
+
+    function stopExplore(forceText = 'Đã dừng thám hiểm.') {
+      state.explore = {
+        active: false,
+        chapterId: getChapterById(state.chapterId).id,
+        startTime: 0,
+        endTime: 0,
+        nextEncounterAt: 0,
+        travelLoot: { gold:0, gems:0, tickets:0 },
+        rewards: Array.isArray(state.explore?.rewards) ? state.explore.rewards : [],
+      };
+      addLog(forceText);
+      persistState();
+      render();
+    }
+
+    function ensureAdminTrapState() {
+      if (!Array.isArray(state.player.redeemedCodes)) state.player.redeemedCodes = [];
+      if (typeof state.player.adminTrapUnlocked !== 'boolean') state.player.adminTrapUnlocked = false;
+      if (typeof state.player.adminTrapTriggered !== 'boolean') state.player.adminTrapTriggered = false;
+      if (typeof state.player.adminTrapResolved !== 'boolean') state.player.adminTrapResolved = false;
+      if (typeof state.player.sleepLockResolved !== 'boolean') state.player.sleepLockResolved = false;
+      if (!state.adminLock || typeof state.adminLock !== 'object') state.adminLock = { active: false, type: '', until: 0 };
+      if (typeof state.adminLock.type !== 'string') state.adminLock.type = '';
+      if (typeof state.adminLock.until !== 'number') state.adminLock.until = 0;
+
+      const usedAdmBefore = state.player.redeemedCodes.includes('ADM');
+      if (usedAdmBefore && !state.player.adminTrapResolved) {
+        state.player.adminTrapTriggered = true;
+        state.adminLock.active = true;
+        if (!state.adminLock.type) state.adminLock.type = 'adm';
+      }
+
+      const usedTrangNguBefore = state.player.redeemedCodes.includes('TRANGNGU');
+      if (usedTrangNguBefore && !state.player.sleepLockResolved && (!state.adminLock.type || state.adminLock.type === 'sleep_lock') && !state.adminLock.until) {
+        state.adminLock = {
+          active: true,
+          type: 'sleep_lock',
+          until: Date.now() + GIFT_CODES.TRANGNGU.lockHours * 60 * 60 * 1000,
+        };
+      }
+
+      const lockExpired = state.adminLock.type === 'sleep_lock' && state.adminLock.until && Date.now() >= state.adminLock.until;
+      if (lockExpired) state.adminLock = { active: false, type: '', until: 0 };
+      if (state.adminLock.type === 'sleep_lock' && state.adminLock.until && Date.now() < state.adminLock.until) state.adminLock.active = true;
+    }
+
+    function ensureExploreState() {
+      if (!state.explore || typeof state.explore !== 'object') {
+        state.explore = {
+          active: false,
+          chapterId: getChapterById(state.chapterId).id,
+          startTime: 0,
+          endTime: 0,
+          nextEncounterAt: 0,
+          travelLoot: { gold:0, gems:0, tickets:0 },
+          rewards: [],
+        };
+      }
+      if (!state.explore.travelLoot || typeof state.explore.travelLoot !== 'object') state.explore.travelLoot = { gold:0, gems:0, tickets:0 };
+      if (!Array.isArray(state.explore.rewards)) state.explore.rewards = [];
+      if (!state.explore.active) return;
+      const invalidTime = !state.explore.startTime || !state.explore.endTime || state.explore.endTime <= state.explore.startTime;
+      const expired = Date.now() >= state.explore.endTime;
+      if (invalidTime || expired) {
+        state.explore = {
+          active: false,
+          chapterId: getChapterById(state.chapterId).id,
+          startTime: 0,
+          endTime: 0,
+          nextEncounterAt: 0,
+          travelLoot: { gold:0, gems:0, tickets:0 },
+          rewards: Array.isArray(state.explore.rewards) ? state.explore.rewards : [],
+        };
+      }
+      if (state.battle && (!state.battle.pirate || typeof state.battle.playerHp !== 'number')) state.battle = null;
+    }
+
+    function scheduleNextEncounter() {
+      ensureExploreState();
+      if (!state.explore.active) return;
+      const chapter = getChapterById(state.explore.chapterId);
+      state.explore.nextEncounterAt = Date.now() + randInt(chapter.encounterMin, chapter.encounterMax) * 1000;
+      persistState();
+      render();
+    }
+
+    function updateLoop() {
+      ensureExploreState();
+      const now = Date.now();
+      if (state.explore.active) {
+        if (now >= state.explore.endTime) return stopExplore('Kết thúc chuyến thám hiểm thành công.');
+        if (!state.battle && state.explore.nextEncounterAt && now >= state.explore.nextEncounterAt) createBattle(getChapterById(state.explore.chapterId));
+      }
+      renderLight();
+      if (state.adminLock?.active && state.adminLock.type === 'sleep_lock') updateLockOverlayContent();
+    }
+
+    function startExploreLoop() {
+      if (exploreLoopTimer) clearInterval(exploreLoopTimer);
+      exploreLoopTimer = setInterval(updateLoop, 250);
+    }
+
+    function awakenFruit(id) {
+      const fruit = getFruit(id);
+      if (!fruit.awakenable || isAwakened(id)) return;
+      if (state.player.awakeningCards < 1) return addLogAndRender('Không đủ thẻ awakening.');
+      if (fruitMastery(id) < 40) return addLogAndRender(`Cần mastery 40 để awakening ${fruit.name}.`);
+      state.player.awakeningCards -= 1;
+      state.player.awakened[id] = true;
+      addLog(`${fruit.name} đã được awakening.`);
+      persistState();
+      render();
+    }
+
+    function eatFruit(id) {
+      if (fruitCount(id) <= 0) return;
+      const currentId = state.player.equippedFruitId;
+      if (currentId === id && fruitCount(id) <= 1) return addLogAndRender(`Bạn đang dùng ${getFruit(id).name}, không thể ăn lại khi chỉ còn 1 trái.`);
+      state.player.fruitInventory[id] = Math.max(0, (state.player.fruitInventory[id] || 0) - 1);
+      state.player.equippedFruitId = id;
+      if (!(id in state.player.fruitMastery)) state.player.fruitMastery[id] = 0;
+      if (state.player.fruitInventory[id] === 0) delete state.player.fruitInventory[id];
+      addLog(`Đã ăn ${getFruit(id).name}. Trái này trở thành trái đang dùng.`);
+      persistState();
+      render();
+    }
+
+    function doGacha(guaranteedRare = false, skipCost = false) {
+      if (!skipCost) {
+        if (state.player.gachaTickets > 0) state.player.gachaTickets -= 1;
+        else if (state.player.gems >= 200) state.player.gems -= 200;
+        else return addLogAndRender('Không đủ vé gacha hoặc kim cương để quay.');
+      }
+      const fruit = guaranteedRare ? weightedGachaFruit(['Hiếm','Siêu hiếm','Huyền thoại','Đẳng cấp']) : weightedGachaFruit();
+      giveFruit(fruit.id, guaranteedRare ? 'Giftcode may mắn' : 'Gacha');
+      showGachaPopup(fruit, guaranteedRare);
+      persistState();
+      render();
+    }
+
+    function doMultiGacha() {
+      if (state.player.gachaTickets >= 5) state.player.gachaTickets -= 5;
+      else if (state.player.gems >= 900) state.player.gems -= 900;
+      else return addLogAndRender('Không đủ 5 vé gacha hoặc 900 kim cương để quay 5 lần.');
+      const results = [];
+      for (let i = 0; i < 5; i++) {
+        const fruit = weightedGachaFruit();
+        results.push(fruit);
+        giveFruit(fruit.id, 'Gacha x5');
+      }
+      addLog(`Quay 5 lần nhận: ${results.map(f => f.name).join(', ')}.`);
+      showMultiGachaPopup(results);
+      persistState();
+      render();
+    }
+
+    function showMultiGachaPopup(results) {
+      clearTimeout(gachaPopupTimer);
+      const popupEl = document.getElementById('gachaPopup');
+      popupEl.classList.add('show');
+      let index = 0;
+      function runNext() {
+        if (index >= results.length) {
+          gachaPopupTimer = setTimeout(() => popupEl.classList.remove('show'), 1200);
+          return;
+        }
+        const fruit = results[index];
+        const reelEl = document.getElementById('gachaReel');
+        const { reel, targetIndex } = buildGachaReel(fruit, false);
+        reelEl.style.transition = 'none';
+        reelEl.style.transform = 'translateX(0px)';
+        reelEl.innerHTML = reel.map(f => `
+          <div class="gacha-card">
+            <div class="fruit-tier ${TIER_CLASS[f.tier]}">${f.tier}</div>
+            <div class="name">${f.name}</div>
+            <div class="power">LC ${formatNum(f.power)}</div>
+          </div>
+        `).join('');
+        document.getElementById('gachaFruitName').textContent = `Lượt ${index + 1}/5`;
+        document.getElementById('gachaFruitTier').textContent = 'Đang quay...';
+        document.getElementById('gachaFruitPower').textContent = '';
+        requestAnimationFrame(() => {
+          const wrapWidth = popupEl.querySelector('.gacha-reel-wrap').clientWidth;
+          const cardWidth = 152;
+          const centerOffset = wrapWidth / 2 - cardWidth / 2;
+          const targetX = -(targetIndex * cardWidth - centerOffset);
+          reelEl.style.transition = 'transform 8s cubic-bezier(.12,.82,.16,1)';
+          reelEl.style.transform = `translateX(${targetX}px)`;
+        });
+        setTimeout(() => {
+          document.getElementById('gachaFruitName').textContent = `${fruit.name} • Lượt ${index + 1}/5`;
+          document.getElementById('gachaFruitTier').textContent = `${fruit.tier}${fruit.awakenable ? ' • Có thể awakening' : ''}`;
+          document.getElementById('gachaFruitPower').textContent = `Lực chiến: ${formatNum(fruit.power)}`;
+        }, 8150);
+        setTimeout(() => { index += 1; runNext(); }, 9300);
+      }
+      runNext();
+    }
+
+    function redeemGiftCode() {
+      const input = document.getElementById('giftCodeInput');
+      const rawCode = (input?.value || '').trim().toUpperCase();
+      if (!rawCode) return addLogAndRender('Vui lòng nhập giftcode.');
+      const reward = GIFT_CODES[rawCode];
+      if (!reward) return addLogAndRender(`Giftcode ${rawCode} không tồn tại hoặc đã hết hạn.`);
+      if (!Array.isArray(state.player.redeemedCodes)) state.player.redeemedCodes = [];
+      if (state.player.redeemedCodes.includes(rawCode)) return addLogAndRender(`Giftcode ${rawCode} đã được sử dụng trước đó.`);
+
+      if (reward.type === 'admin_trap') {
+        state.player.redeemedCodes.push(rawCode);
+        state.player.adminTrapTriggered = true;
+        state.player.adminTrapResolved = false;
+        state.adminLock = { active: true, type: 'adm', until: 0 };
+        input.value = '';
+        persistState();
+        showAdminLock();
+        return;
+      }
+
+      if (reward.type === 'sleep_lock') {
+        state.player.redeemedCodes.push(rawCode);
+        state.player.sleepLockResolved = false;
+        state.adminLock = { active: true, type: 'sleep_lock', until: Date.now() + reward.lockHours * 60 * 60 * 1000 };
+        input.value = '';
+        addLog(`Nhập giftcode ${rawCode} thành công, nhận ${reward.fakeDescription}.`);
+        persistState();
+        showAdminLock();
+        return;
+      }
+
+      if (reward.type === 'lucky_rare') {
+        state.player.redeemedCodes.push(rawCode);
+        input.value = '';
+        addLog(`Nhập giftcode ${rawCode} thành công.`);
+        persistState();
+        doGacha(true, true);
+        return;
+      }
+
+      if (reward.type === 'exp_boost') {
+        state.player.redeemedCodes.push(rawCode);
+        state.player.expBoostMultiplier = reward.multiplier;
+        state.player.expBoostUntil = Date.now() + reward.durationHours * 60 * 60 * 1000;
+        input.value = '';
+        addLog(`Nhập giftcode ${rawCode} thành công, kích hoạt x${reward.multiplier} EXP trong ${reward.durationHours} giờ.`);
+        persistState();
+        render();
+        return;
+      }
+
+      if (reward.gems) state.player.gems += reward.gems;
+      if (reward.gold) state.player.gold += reward.gold;
+      if (reward.awakeningCards) state.player.awakeningCards += reward.awakeningCards;
+      if (reward.gachaTickets) state.player.gachaTickets += reward.gachaTickets;
+      state.player.redeemedCodes.push(rawCode);
+      addLog(`Nhập giftcode ${rawCode} thành công, nhận ${reward.description}.`);
+      input.value = '';
+      persistState();
+      render();
+    }
+
+    function updateLockOverlayContent() {
+      const chip = document.getElementById('lockTitleChip');
+      const title = document.getElementById('lockTitleText');
+      const desc = document.getElementById('lockDescText');
+      const hint = document.getElementById('lockHintBox');
+      const timeText = document.getElementById('lockTimeText');
+      const footer = document.getElementById('lockFooterText');
+      const punishBtn = document.getElementById('adminPunishBtn');
+      if (!chip || !title || !desc || !hint || !timeText || !footer || !punishBtn) return;
+
+      if (state.adminLock?.type === 'sleep_lock') {
+        const reward = GIFT_CODES.TRANGNGU;
+        chip.textContent = 'Tài khoản bị khóa';
+        title.textContent = 'Bạn đã nhập code TRANGNGU';
+        desc.textContent = 'Nhập mật khẩu để mở khóa tài khoản. Dòng phép tính dưới đây chỉ là gợi ý hiển thị.';
+        hint.style.display = 'inline-block';
+        hint.textContent = `Gợi ý: ${reward.passwordHint}`;
+        const remainMs = Math.max(0, Number(state.adminLock.until || 0) - Date.now());
+        const hours = Math.floor(remainMs / 3600000);
+        const mins = Math.floor((remainMs % 3600000) / 60000);
+        timeText.textContent = `Thời gian khóa còn lại: ${String(hours).padStart(2,'0')}:${String(mins).padStart(2,'0')}`;
+        footer.textContent = `Nhập đúng sẽ mở khóa và nhận ${formatNum(reward.successGems)} kim cương. Nhập sai sẽ bị cộng thêm ${reward.wrongPenaltyHours} giờ khóa.`;
+        punishBtn.style.display = 'none';
+      } else {
+        chip.textContent = 'Cấm chơi';
+        title.textContent = 'Bạn đã nhập code ADM';
+        desc.textContent = 'Đây là code dành cho admin. Người chơi thường nhập vào sẽ bị phạt. Nhập đúng mật khẩu để thoát, hoặc chấp nhận hình phạt để tiếp tục chơi.';
+        hint.style.display = 'none';
+        hint.textContent = '';
+        timeText.textContent = '';
+        footer.textContent = 'Sai mật khẩu sẽ không thoát được. Chịu hình phạt sẽ mất 10,000 kim cương, 1,000,000 vàng, 1,000 vé gacha và xoá toàn bộ trái trong túi.';
+        punishBtn.style.display = 'inline-flex';
+      }
+    }
+
+    function showAdminLock() {
+      updateLockOverlayContent();
+      document.getElementById('adminLockOverlay').classList.add('show');
+    }
+
+    function hideAdminLock() {
+      document.getElementById('adminLockOverlay').classList.remove('show');
+    }
+
+    function unlockAdminTrap() {
+      const input = document.getElementById('adminPasswordInput');
+      const password = (input?.value || '').trim();
+      if (state.adminLock?.type === 'sleep_lock') {
+        const reward = GIFT_CODES.TRANGNGU;
+        if (password !== reward.password) {
+          state.adminLock.until = Number(state.adminLock.until || Date.now()) + reward.wrongPenaltyHours * 60 * 60 * 1000;
+          addLog(`Sai mật khẩu cho code TRANGNGU. Tài khoản bị cộng thêm ${reward.wrongPenaltyHours} giờ khóa.`);
+          if (input) input.value = '';
+          persistState();
+          updateLockOverlayContent();
+          return;
+        }
+        state.player.gems += reward.successGems;
+        state.player.sleepLockResolved = true;
+        state.adminLock = { active: false, type: '', until: 0 };
+        addLog(`Đã mở khóa TRANGNGU và nhận ${formatNum(reward.successGems)} kim cương.`);
+        if (input) input.value = '';
+        persistState();
+        hideAdminLock();
+        render();
+        return;
+      }
+
+      if (password !== '1900') {
+        addLog('Sai mật khẩu cho code ADM.');
+        if (input) input.value = '';
+        return;
+      }
+      state.adminLock = { active: false, type: '', until: 0 };
+      state.player.adminTrapUnlocked = true;
+      state.player.adminTrapResolved = true;
+      addLog('Đã nhập đúng mật khẩu ADM và thoát màn hình cấm chơi.');
+      if (input) input.value = '';
+      persistState();
+      hideAdminLock();
+      render();
+    }
+
+    function acceptAdminPunishment() {
+      state.player.gems = Math.max(0, state.player.gems - 10000);
+      state.player.gold = Math.max(0, state.player.gold - 1000000);
+      state.player.gachaTickets = Math.max(0, state.player.gachaTickets - 1000);
+      const equippedId = state.player.equippedFruitId || 'rocket';
+      state.player.fruitInventory = {};
+      state.player.fruitMastery = { [equippedId]: state.player.fruitMastery?.[equippedId] || 0 };
+      state.player.awakened = Object.fromEntries(Object.entries(state.player.awakened || {}).filter(([id]) => id === equippedId));
+      state.adminLock = { active: false, type: '', until: 0 };
+      state.player.adminTrapResolved = true;
+      addLog('Bạn đã chịu hình phạt từ code ADM. Tài nguyên bị trừ mạnh và túi trái đã bị xoá.');
+      persistState();
+      hideAdminLock();
+      render();
+    }
+
+    function showGachaPopup(fruit, guaranteedRare = false) {
+      clearTimeout(gachaPopupTimer);
+      const reelEl = document.getElementById('gachaReel');
+      const popupEl = document.getElementById('gachaPopup');
+      const { reel, targetIndex } = buildGachaReel(fruit, guaranteedRare);
+      reelEl.style.transition = 'none';
+      reelEl.style.transform = 'translateX(0px)';
+      reelEl.innerHTML = reel.map(f => `
+        <div class="gacha-card">
+          <div class="fruit-tier ${TIER_CLASS[f.tier]}">${f.tier}</div>
+          <div class="name">${f.name}</div>
+          <div class="power">LC ${formatNum(f.power)}</div>
+        </div>
+      `).join('');
+      document.getElementById('gachaFruitName').textContent = '';
+      document.getElementById('gachaFruitTier').textContent = guaranteedRare ? 'Quay may mắn • chắc chắn từ Hiếm trở lên' : '';
+      document.getElementById('gachaFruitPower').textContent = '';
+      popupEl.classList.add('show');
+      requestAnimationFrame(() => {
+        const wrapWidth = popupEl.querySelector('.gacha-reel-wrap').clientWidth;
+        const cardWidth = 152;
+        const centerOffset = wrapWidth / 2 - cardWidth / 2;
+        const targetX = -(targetIndex * cardWidth - centerOffset);
+        reelEl.style.transition = 'transform 8s cubic-bezier(.12,.82,.16,1)';
+        reelEl.style.transform = `translateX(${targetX}px)`;
+      });
+      setTimeout(() => {
+        document.getElementById('gachaFruitName').textContent = fruit.name;
+        document.getElementById('gachaFruitTier').textContent = `${fruit.tier}${fruit.awakenable ? ' • Có thể awakening' : ''}${guaranteedRare ? ' • Quà từ HOMMAYMAN' : ''}`;
+        document.getElementById('gachaFruitPower').textContent = `Lực chiến: ${formatNum(fruit.power)}`;
+      }, 8150);
+      gachaPopupTimer = setTimeout(() => popupEl.classList.remove('show'), 11200);
+    }
+
+    function renderTopStats() {
+      const fruit = currentFruit();
+      const topStats = [
+        ['Vàng', formatNum(state.player.gold)],
+        ['Kim cương', formatNum(state.player.gems)],
+        ['Thẻ awakening', formatNum(state.player.awakeningCards)],
+        ['Vé gacha', formatNum(state.player.gachaTickets)],
+      ];
+      document.getElementById('topStats').innerHTML = topStats.map(([k,v]) => `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
+      document.getElementById('equippedFruitText').textContent = `${fruit.name}${isAwakened(fruit.id) ? ' • Awakened' : ''}`;
+      document.getElementById('masteryText').textContent = `Mastery: ${fruitMastery(fruit.id)} • Lực chiến gốc: ${formatNum(fruit.power)} • Lực chiến hiện tại: ${formatNum(fruitPower(fruit))}`;
+      document.getElementById('powerChip').textContent = `LC tổng ${formatNum(playerCombatPower())}`;
+      document.getElementById('levelText').textContent = `Lv ${state.player.level} / 600`;
+      document.getElementById('expText').textContent = state.player.level >= 600 ? `Đã đạt cấp tối đa${getExpBoostText()}` : `${formatNum(state.player.exp)} / ${formatNum(expNeeded(state.player.level))} EXP${getExpBoostText()}`;
+      document.getElementById('expBar').style.width = state.player.level >= 600 ? '100%' : `${(state.player.exp / expNeeded(state.player.level)) * 100}%`;
+    }
+
+    function renderExplorePanel() {
+      const wrap = document.getElementById('adventurePanelWrap');
+      const sidebar = document.getElementById('mainSidebar');
+      const showAdventure = state.activeTab === 'adventure';
+      wrap.style.display = showAdventure ? 'block' : 'none';
+      sidebar.style.gridTemplateColumns = showAdventure ? 'minmax(300px, 360px) minmax(0, 1fr)' : 'minmax(220px, 260px) minmax(0, 1fr)';
+      if (!showAdventure) return;
+      const select = document.getElementById('chapterSelect');
+      select.innerHTML = CHAPTERS.map(c => `<option value="${c.id}">${c.name} (Lv ${c.levelMin}-${c.levelMax})</option>`).join('');
+      const chapter = getChapterById(state.chapterId);
+      state.chapterId = chapter.id;
+      select.value = chapter.id;
+      document.getElementById('chapterReq').textContent = `Yêu cầu Lv ${chapter.levelMin}`;
+      document.getElementById('chapterInfo').innerHTML = `
+        <div>Thời gian: <strong>${formatTime(chapter.durationSec)}</strong></div>
+        <div>Gặp hải tặc: <strong>${chapter.encounterMin}-${chapter.encounterMax}s/lần</strong></div>
+        <div>Vàng: <strong>${formatNum(chapter.goldMin)}-${formatNum(chapter.goldMax)}</strong></div>
+        <div>Tỉ lệ KC: <strong>${Math.round(chapter.gemChance*100)}%</strong> (${chapter.gemAmount} KC)</div>
+        <div>Tỉ lệ trái: <strong>${(chapter.fruitChance*100).toFixed(chapter.id===3?1:0)}</strong>%</div>
+        <div>Tỉ lệ awakening: <strong>${chapter.awakenChance*100}%</strong></div>
+        <div>Biến cố boss: <strong>${Math.round((chapter.bossChance || 0) * 100)}%</strong> • có 1 lần hồi sinh</div>
+      `;
+    }
+
+    function renderResources() {
+      const rows = [
+        ['Vàng', state.player.gold],
+        ['Kim cương', state.player.gems],
+        ['Awakening', state.player.awakeningCards],
+        ['Vé gacha', state.player.gachaTickets],
+      ];
+      document.getElementById('resourceRow').innerHTML = rows.map(([name, value]) => `
+        <div class="item-card center"><div class="small muted">${name}</div><div style="font-weight:900; font-size:20px; margin-top:6px;">${formatNum(value)}</div></div>
+      `).join('');
+    }
+
+    function renderExploreRewards() {
+      const box = document.getElementById('exploreRewardsBox');
+      const rewards = Array.isArray(state.explore?.rewards) ? state.explore.rewards : [];
+      if (!rewards.length) {
+        box.innerHTML = `<div class="empty">Chưa có gì nhận được trong chuyến thám hiểm này.</div>`;
+        return;
+      }
+      box.innerHTML = `<div class="reward-list">${rewards.map(item => `
+        <div class="reward-item">
+          <div class="time">${item.time}</div>
+          <div class="desc">${item.text}</div>
+        </div>
+      `).join('')}</div>`;
+    }
+
+    function renderTabs() {
+      const tabsEl = document.getElementById('tabs');
+      tabsEl.innerHTML = tabs.map(t => `<button class="tab ${state.activeTab === t.id ? 'active' : ''}" data-tab="${t.id}">${t.label}</button>`).join('');
+      [...tabsEl.querySelectorAll('.tab')].forEach(btn => {
+        btn.onclick = () => { state.activeTab = btn.dataset.tab; render(); };
+      });
+    }
+
+    function renderAdventureTab() {
+      const autoChapter = chapterForLevel(state.player.level);
+      const chapter = getChapterById(state.chapterId);
+      return `
+        <div class="content-grid">
+          <div class="panel" style="padding:14px;">
+            <div class="section-title"><h3>Đề xuất hiện tại</h3><span class="chip">${state.explore.active ? 'Đang thám hiểm' : 'Sẵn sàng'}</span></div>
+            <div class="pirate-card">
+              <h4>${autoChapter.name}</h4>
+              <div class="small muted">Phù hợp cho level ${autoChapter.levelMin}-${autoChapter.levelMax}.</div>
+              <div class="line"></div>
+              <div>Trái đang dùng: <strong>${currentFruit().name}</strong></div>
+              <div>Trạng thái: <strong>${state.explore.active ? 'Đang thám hiểm' : 'Chưa bắt đầu'}</strong></div>
+              <div>Mastery: <strong>${fruitMastery(currentFruit().id)}</strong></div>
+              <div>Lực chiến hiện tại: <strong>${formatNum(playerCombatPower())}</strong></div>
+            </div>
+          </div>
+          <div class="panel" style="padding:14px;">
+            <div class="section-title"><h3>Loot chuyến đi</h3><span class="chip">Phiêu lưu hiện tại</span></div>
+            <div class="card-grid" style="grid-template-columns: repeat(3, minmax(0,1fr));">
+              <div class="item-card center"><div class="small muted">Vàng nhặt được</div><div style="font-size:24px; font-weight:900;">${formatNum(state.explore.travelLoot.gold || 0)}</div></div>
+              <div class="item-card center"><div class="small muted">Kim cương nhặt được</div><div style="font-size:24px; font-weight:900;">${formatNum(state.explore.travelLoot.gems || 0)}</div></div>
+              <div class="item-card center"><div class="small muted">Vé gacha nhặt được</div><div style="font-size:24px; font-weight:900;">${formatNum(state.explore.travelLoot.tickets || 0)}</div></div>
+            </div>
+            <div class="line"></div>
+            <div class="small muted">${chapter.name}: nếu thua, bạn sẽ mất một phần tài nguyên kiếm được trong chuyến thám hiểm hiện tại.</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderInventoryTab() {
+      const owned = FRUITS.filter(f => fruitCount(f.id) > 0 || state.player.equippedFruitId === f.id);
+      if (!owned.length) return `<div class="empty">Bạn chưa sở hữu trái nào.</div>`;
+      return `
+        <div class="card-grid">
+          ${owned.map(f => {
+            const isCurrent = state.player.equippedFruitId === f.id;
+            const count = fruitCount(f.id);
+            const canEat = count > 0 && (!isCurrent || count > 1);
+            return `
+              <div class="fruit-card">
+                <div class="fruit-tier ${TIER_CLASS[f.tier]}">${f.tier}</div>
+                <h4>${f.name}${isCurrent ? ' • Đang dùng' : ''}</h4>
+                <div class="small muted">Số lượng trong túi: ${count}</div>
+                <div class="small muted">Lực chiến: ${formatNum(f.power)}${isAwakened(f.id) ? ` → ${formatNum(fruitPower(f))}` : ''}</div>
+                <div class="small muted">Mastery: ${fruitMastery(f.id)}</div>
+                <div class="small muted">${f.awakenable ? 'Có thể awakening' : 'Không thể awakening'}</div>
+                <div class="line"></div>
+                <div class="row">
+                  <button class="btn ${isCurrent ? 'secondary' : ''}" ${canEat ? '' : 'disabled'} onclick="eatFruit('${f.id}')">${isCurrent ? (count > 1 ? 'Ăn thêm' : 'Đang dùng') : 'Ăn'}</button>
+                  <button class="btn warn" ${(!f.awakenable || isAwakened(f.id)) ? 'disabled' : ''} onclick="awakenFruit('${f.id}')">${isAwakened(f.id) ? 'Đã awakening' : 'Awakening'}</button>
+                </div>
+                <div class="small muted" style="margin-top:8px;">Ăn trái sẽ mất 1 trái trong túi. Awakening yêu cầu: 1 thẻ + mastery 40.</div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    function renderLibraryTab() {
+      return `
+        <div class="card-grid">
+          ${FRUITS.map(f => `
+            <div class="fruit-card">
+              <div class="fruit-tier ${TIER_CLASS[f.tier]}">${f.tier}</div>
+              <h4>${f.name}</h4>
+              <div class="small muted">Lực chiến: ${formatNum(f.power)}</div>
+              <div class="small muted">${f.awakenable ? 'Có thể awakening' : 'Không thể awakening'}</div>
+              <div class="small muted">${fruitCount(f.id) > 0 ? `Đã sở hữu ${fruitCount(f.id)}` : 'Chưa sở hữu'}</div>
+            </div>
+          `).join('')}
+          <div class="fruit-card">
+            <div class="fruit-tier tier-god">Đẳng cấp</div>
+            <h4>Thiên Thần</h4>
+            <div class="small muted">Lực chiến: 200,000</div>
+            <div class="small muted">Sắp ra mắt</div>
+            <div class="small muted">Chưa có giá chính thức trong shop</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderShopTab() {
+      ensureShop();
+      const timeLeft = Math.max(0, state.shop.nextRefreshAt - Date.now());
+      const mins = Math.floor(timeLeft / 60000);
+      const secs = Math.floor((timeLeft % 60000) / 1000);
+      const items = state.shop.items || [];
+      return `
+        <div class="shop-grid">
+          <div class="panel" style="padding:16px;">
+            <div class="section-title"><h3>Shop trái ác quỷ</h3><span class="chip">Làm mới mỗi 15 phút</span></div>
+            <div class="row" style="justify-content:space-between; align-items:center;">
+              <div>
+                <div>Các trái xuất hiện theo <strong>ngẫu nhiên</strong>, không theo tỉ lệ gacha.</div>
+                <div class="small muted" style="margin-top:8px;">Mỗi đợt chỉ bán <strong>3-5 trái</strong>. Không phải trái nào cũng được giảm giá, và trái được giảm có thể giảm tới <strong>90%</strong>.</div>
+              </div>
+              <div class="row" style="align-items:center;">
+                <span class="chip">Còn lại ${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}</span>
+                <button class="btn secondary" onclick="forceRefreshShop()">Làm mới ngay</button>
+              </div>
+            </div>
+          </div>
+          <div class="panel" style="padding:16px;">
+            <div class="section-title"><h3>Danh sách đang bán</h3><span class="chip">Ngẫu nhiên</span></div>
+            <div class="shop-items-grid">
+              ${items.map(item => {
+                const fruit = getFruit(item.fruitId);
+                return `
+                  <div class="shop-card">
+                    <div class="fruit-tier ${TIER_CLASS[fruit.tier]}">${fruit.tier}</div>
+                    <h4>${fruit.name}</h4>
+                    <div class="small muted">Lực chiến: ${formatNum(fruit.power)}</div>
+                    <div class="small muted">Giá gốc: ${formatNum(item.basePrice)} vàng</div>
+                    <div class="shop-price">${formatNum(item.finalPrice)} vàng</div>
+                    ${item.hasDiscount ? `<div class="chip" style="margin-top:8px;">Giảm ${item.discountPercent}%</div>` : `<div class="small muted" style="margin-top:8px;">Không giảm giá</div>`}
+                    <div class="line"></div>
+                    <button class="btn good" onclick="buyShopItem('${fruit.id}')">Mua ngay</button>
+                  </div>
+                `;
+              }).join('')}
+              <div class="shop-card">
+                <div class="fruit-tier tier-god">Sắp ra mắt</div>
+                <h4>Thiên Thần</h4>
+                <div class="small muted">Lực chiến: 200,000</div>
+                <div class="small muted">Giá: ???</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderGachaTab() {
+      return `
+        <div class="content-grid">
+          <div class="panel" style="padding:14px;">
+            <div class="section-title"><h3>Gacha trái ác quỷ</h3><span class="chip">Ưu tiên vé</span></div>
+            <div class="pirate-card">
+              <div>Chi phí: <strong>1 vé gacha</strong> hoặc <strong>200 kim cương</strong></div>
+              <div class="small muted" style="margin-top:8px;">Khi quay sẽ hiện popup băng chuyền 8 giây và dừng ở trái nhận được theo đúng tỉ lệ thật.</div>
+              <div class="line"></div>
+              <div class="row">
+                <button class="btn" onclick="doGacha()">Quay 1 lần</button>
+                <button class="btn secondary" onclick="doMultiGacha()">Quay 5 lần liên tiếp</button>
+              </div>
+              <div class="small muted" style="margin-top:10px;">Quay 5 lần: <strong>5 vé gacha</strong> hoặc <strong>900 kim cương</strong>.</div>
+            </div>
+            <div class="line"></div>
+            <div class="pirate-card">
+              <div class="section-title" style="margin-bottom:10px;"><h3>Giftcode</h3><span class="chip">Mới</span></div>
+              <div class="row" style="align-items:center;">
+                <input id="giftCodeInput" placeholder="Nhập giftcode" style="flex:1; min-width:220px; background:#1e293b; color:white; border:1px solid var(--border); border-radius:14px; padding:12px 14px; outline:none;" />
+                <button class="btn good" onclick="redeemGiftCode()">Xác nhận</button>
+              </div>
+              <div class="small muted" style="margin-top:10px; line-height:1.7;">
+                <div><strong>GAMEMOI</strong> - nhận <strong>5,000 kim cương</strong></div>
+                <div><strong>TANTHU001</strong> - nhận <strong>800 kim cương</strong></div>
+                <div><strong>TUAN001</strong> - nhận <strong>4,000 kim cương</strong></div>
+                <div><strong>SUKIENSAPTOITHT</strong> - nhận <strong>2,000 kim cương</strong></div>
+                <div><strong>TRANGNGU</strong> - nhận <strong>8,000 kim cương</strong></div>
+                <div><strong>HOMMAYMAN</strong> - mở quay may mắn, <strong>chắc chắn ra trái Hiếm trở lên</strong></div>
+                <div><strong>ADM</strong> - nhận <strong>10,000 kim cương • 1,000,000 vàng • 1,000 vé gacha</strong></div>
+              </div>
+            </div>
+          </div>
+          <div class="panel" style="padding:14px;">
+            <div class="section-title"><h3>Tỉ lệ khung hiếm</h3><span class="chip">Tham khảo</span></div>
+            <div class="card-grid" style="grid-template-columns: repeat(2, minmax(0,1fr));">
+              ${Object.entries(GACHA_WEIGHTS).map(([tier, weight]) => `<div class="item-card"><div class="small muted">${tier}</div><div style="font-weight:900; font-size:20px;">${weight}%</div></div>`).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderTabContent() {
+      const box = document.getElementById('tabContent');
+      if (state.activeTab === 'adventure') box.innerHTML = renderAdventureTab();
+      if (state.activeTab === 'inventory') box.innerHTML = renderInventoryTab();
+      if (state.activeTab === 'library') box.innerHTML = renderLibraryTab();
+      if (state.activeTab === 'shop') box.innerHTML = renderShopTab();
+      if (state.activeTab === 'gacha') box.innerHTML = renderGachaTab();
+    }
+
+    function renderBattle() {
+      const overlay = document.getElementById('battleOverlay');
+      if (!state.battle) {
+        overlay.classList.remove('show');
+        return;
+      }
+      const fruit = currentFruit();
+      document.getElementById('battleTitle').textContent = `${state.battle.pirate.isBoss ? 'Boss xuất hiện: ' : 'Đụng độ '}${state.battle.pirate.name}`;
+      document.getElementById('playerBattleName').textContent = `Lv ${state.player.level} • ${fruit.name}`;
+      document.getElementById('playerHpText').textContent = `${formatNum(state.battle.playerHp)} / ${formatNum(state.battle.playerMaxHp)}`;
+      document.getElementById('playerHpBar').style.width = `${(state.battle.playerHp / state.battle.playerMaxHp) * 100}%`;
+      document.getElementById('battleFruitInfo').textContent = `Mastery ${fruitMastery(fruit.id)} • LC ${formatNum(playerCombatPower())}${isAwakened(fruit.id) ? ' • Awakened' : ''}`;
+      document.getElementById('pirateName').textContent = state.battle.pirate.name;
+      document.getElementById('pirateHpText').textContent = `${formatNum(state.battle.pirate.hp)} / ${formatNum(state.battle.pirate.maxHp)}`;
+      document.getElementById('pirateHpBar').style.width = `${(state.battle.pirate.hp / state.battle.pirate.maxHp) * 100}%`;
+      document.getElementById('pirateInfo').textContent = `Chương ${state.battle.pirate.chapterId} • ${state.battle.pirate.isBoss ? 'Boss cực mạnh' : 'Hải tặc'} • Lực chiến ${formatNum(state.battle.pirate.power)}${state.battle.pirate.isBoss ? state.battle.reviveUsed ? ' • Đã dùng hồi sinh' : ' • Còn 1 hồi sinh' : ''}`;
+      document.getElementById('battleLog').innerHTML = state.battle.logs.map(x => `<div>${x}</div>`).join('');
+      const mastery = fruitMastery(fruit.id);
+      document.getElementById('skillsBox').innerHTML = SKILLS.map((s, i) => {
+        const locked = mastery < s.mastery || state.battle.turnLocked;
+        return `<button class="skill-btn ${locked ? 'locked' : ''}" onclick="battleUseSkill(${i})">
+          <div style="font-weight:800; margin-bottom:6px;">${s.name}</div>
+          <div class="small muted">${s.desc}</div>
+          <div class="small" style="margin-top:8px;">Yêu cầu mastery: ${s.mastery}</div>
+        </button>`;
+      }).join('');
+      document.getElementById('battleCloseBtn').disabled = true;
+    }
+
+    function renderLight() {
+      if (!document.getElementById('exploreTimer')) return;
+      const ex = state.explore;
+      if (!ex.active) {
+        document.getElementById('exploreTimer').textContent = '00:00 / 00:00';
+        document.getElementById('exploreBar').style.width = '0%';
+        return;
+      }
+      const total = Math.max(1, (ex.endTime - ex.startTime) / 1000);
+      const remain = Math.max(0, (ex.endTime - Date.now()) / 1000);
+      const elapsed = Math.max(0, total - remain);
+      document.getElementById('exploreTimer').textContent = `${formatTime(elapsed)} / ${formatTime(total)}`;
+      document.getElementById('exploreBar').style.width = `${clamp((elapsed / total) * 100, 0, 100)}%`;
+    }
+
+    function render() {
+      ensureAdminTrapState();
+      renderTopStats();
+      renderExplorePanel();
+      renderResources();
+      renderTabs();
+      renderTabContent();
+      renderExploreRewards();
+      renderBattle();
+      renderLight();
+      if (state.adminLock?.active) showAdminLock();
+      else hideAdminLock();
+    }
+
+    function changeChapter(value) {
+      state.chapterId = Number(value);
+      persistState();
+      render();
+    }
+
+    document.getElementById('gachaPopup').onclick = (e) => {
+      if (e.target.id === 'gachaPopup') e.currentTarget.classList.remove('show');
+    };
+
+    window.addEventListener('beforeunload', () => persistState());
+    setInterval(() => persistState(), 5000);
+
+    window.eatFruit = eatFruit;
+    window.awakenFruit = awakenFruit;
+    window.doGacha = doGacha;
+    window.doMultiGacha = doMultiGacha;
+    window.redeemGiftCode = redeemGiftCode;
+    window.buyShopItem = buyShopItem;
+    window.forceRefreshShop = forceRefreshShop;
+    window.battleUseSkill = battleUseSkill;
+    window.startExplore = startExplore;
+    window.stopExplore = stopExplore;
+    window.changeChapter = changeChapter;
+    window.unlockAdminTrap = unlockAdminTrap;
+    window.acceptAdminPunishment = acceptAdminPunishment;
+
+    ensureAdminTrapState();
+    ensureExploreState();
+    render();
+    startExploreLoop();
+    updateLoop();
+  </script>
+</body>
+</html>
       color: var(--text);
     }
     button, select, input { font: inherit; }
